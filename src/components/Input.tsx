@@ -5,7 +5,6 @@ interface InputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   type: string;
-  autocomplete?: string;
 }
 
 const Input: React.FC<InputProps> = ({
