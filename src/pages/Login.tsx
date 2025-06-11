@@ -1,18 +1,28 @@
 import React, { useState } from "react";
 import Button from "../components/Button";
 import Input from "../components/Input";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
-  const Login = () => {
-    console.log("로그인 시도!");
-    console.log("Email:", email);
-    console.log("Password:", password);
-    /**
-     *  api 연결 영역
-     */
+  const handleLogin = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/v1/users/auth/sign-in",
+        { email, password },
+        { withCredentials: true }
+      );
+      const accssToken = response.data.accessToken;
+      localStorage.setItem("accessToken", accssToken);
+
+      navigate("/main");
+    } catch (e) {
+      alert(e);
+    }
   };
 
   return (
@@ -32,7 +42,7 @@ const Login: React.FC = () => {
         placeholder="비밀번호를 입력해주세요"
       />
 
-      <Button text="로그인" onClick={Login} />
+      <Button text="로그인" onClick={handleLogin} />
     </div>
   );
 };
