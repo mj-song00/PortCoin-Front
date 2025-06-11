@@ -16,9 +16,10 @@ const Login: React.FC = () => {
         { email, password },
         { withCredentials: true }
       );
-      const accssToken = response.data.accessToken;
-      localStorage.setItem("accessToken", accssToken);
 
+      const accessToken = response.data;
+      const tokenOnly = accessToken.replace("Bearer ", "");
+      localStorage.setItem("accessToken", tokenOnly);
       navigate("/main");
     } catch (e) {
       alert(e);
@@ -40,6 +41,7 @@ const Login: React.FC = () => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="비밀번호를 입력해주세요"
+        autocomplete="current-password"
       />
 
       <Button text="로그인" onClick={handleLogin} />
