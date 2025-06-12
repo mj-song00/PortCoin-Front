@@ -26,7 +26,7 @@ const Login: React.FC = () => {
       const accessToken = response.data;
       const tokenOnly = accessToken.replace("Bearer ", "");
       localStorage.setItem("accessToken", tokenOnly);
-      navigate("/main");
+      navigate("/");
     } catch (error) {
       const e = error as AxiosError<ErrorResponse>;
 

@@ -1,0 +1,26 @@
+.login-container {
+  width: 100%; /* 부모 요소가 전체 너비를 차지하게 함 */
+  text-align: right; /* 자식 요소를 오른쪽 정렬 */
+  padding: 20px;
+}
+
+.login-btn {
+  margin-right: 10px;
+  font-size: 1rem;
+  padding: 8px 16px;
+  border: none;
+  background-color: #9af6e0;
+  color: black;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logout-btn {
+  font-size: 1rem;
+  padding: 8px 16px;
+  border: none;
+  background-color: #9af6e0;
+  color: black;
+  border-radius: 4px;
+  cursor: pointer;
+}
