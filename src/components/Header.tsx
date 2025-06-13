@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../css/Main.css";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import "../css/Header.css";
 
 interface DecodedToken {
   exp: number;
@@ -30,7 +31,7 @@ const Header: React.FC = () => {
     } catch (err) {
       setIsLoggedIn(false);
       localStorage.removeItem("accessToken");
-      navigate("/login");
+      navigate("/");
     }
   };
 
@@ -76,6 +77,7 @@ const Header: React.FC = () => {
 
   return (
     <header
+      className="header"
       style={{
         height: "80px",
         borderBottom: "1px solid #ccc",
@@ -85,7 +87,27 @@ const Header: React.FC = () => {
         backgroundColor: "#f5f5f5",
       }}
     >
-      <div onClick={() => navigate("/portfolio")}>포트폴리오</div>
+      {/* <div onClick={() => navigate("/portfolio")} className="portfolio-btn">
+        <div>포트폴리오</div>
+      </div>
+
+      <div onClick={() => navigate("/")} className="portfolio-btn">
+        <div>최근 시세보기</div>
+      </div> */}
+
+      <div className="nav-container">
+        <nav onClick={() => navigate("/portfolio")} className="portfolio-btn">
+          포트폴리오
+        </nav>
+
+        <nav onClick={() => navigate("/")} className="mainbtn">
+          시세 보기
+        </nav>
+
+        <button onClick={() => navigate("/mypage")} className="mypage-btn">
+          <img className="account" src="/img/user.png" alt=""></img>
+        </button>
+      </div>
 
       <div className="login-container">
         {!isLoggedIn ? (
