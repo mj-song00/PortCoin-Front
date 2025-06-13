@@ -25,12 +25,9 @@ const Header: React.FC = () => {
         {},
         { withCredentials: true }
       );
-      console.log(res);
-      console.log("리프레시 성공, 새 토큰:", res.data);
       localStorage.setItem("accessToken", res.data);
       setIsLoggedIn(true);
     } catch (err) {
-      console.log("리프레시 토큰 만료 또는 오류", err);
       setIsLoggedIn(false);
       localStorage.removeItem("accessToken");
       navigate("/login");
@@ -88,6 +85,8 @@ const Header: React.FC = () => {
         backgroundColor: "#f5f5f5",
       }}
     >
+      <div onClick={() => navigate("/portfolio")}>포트폴리오</div>
+
       <div className="login-container">
         {!isLoggedIn ? (
           <button type="button" className="login-btn" onClick={navigateToLogin}>
