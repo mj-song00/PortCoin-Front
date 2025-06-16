@@ -4,6 +4,7 @@ import "../css/Main.css";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import "../css/Header.css";
+import { useAuth } from "../hooks/useAuth";
 
 interface DecodedToken {
   exp: number;
@@ -14,25 +15,9 @@ interface DecodedToken {
 const Header: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
-
+  const { refreshAccessToken } = useAuth();
   const navigateToLogin = () => {
     navigate("/login");
-  };
-
-  const refreshAccessToken = async () => {
-    try {
-      const res = await axios.post(
-        "http://localhost:8080/api/v1/users/auth/refresh-token",
-        {},
-        { withCredentials: true }
-      );
-      localStorage.setItem("accessToken", res.data);
-      setIsLoggedIn(true);
-    } catch (err) {
-      setIsLoggedIn(false);
-      localStorage.removeItem("accessToken");
-      navigate("/");
-    }
   };
 
   const checkTokenAndRefresh = async () => {
@@ -96,7 +81,14 @@ const Header: React.FC = () => {
       </div> */}
 
       <div className="nav-container">
-        <nav onClick={() => navigate("/portfolio")} className="portfolio-btn">
+        <nav
+          onClick={() =>
+            isLoggedIn
+              ? navigate("/portfolio")
+              : (alert("로그인이 필요합니다"), navigate("/login"))
+          }
+          className="portfolio-btn"
+        >
           포트폴리오
         </nav>
 
