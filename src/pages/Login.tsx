@@ -9,11 +9,11 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  type ErrorResponse = {
+  interface ErrorResponse {
     statusCode: number;
     message: string;
     data?: any;
-  };
+  }
 
   const handleLogin = async () => {
     try {
