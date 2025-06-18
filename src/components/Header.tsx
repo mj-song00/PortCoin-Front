@@ -16,6 +16,7 @@ const Header: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
   const { refreshAccessToken } = useAuth();
+  
   const navigateToLogin = () => {
     navigate("/login");
   };
@@ -55,30 +56,22 @@ const Header: React.FC = () => {
       );
       localStorage.removeItem("accessToken");
       setIsLoggedIn(false);
+      navigate("/");
     } catch (e) {
       console.error("로그아웃 실패", e);
+      localStorage.removeItem("accessToken");
+      setIsLoggedIn(false);
+      navigate("/");
     }
   };
 
   return (
-    <header
-      className="header"
-      style={{
-        height: "80px",
-        borderBottom: "1px solid #ccc",
-        display: "flex",
-        alignItems: "center",
-        padding: "0 20px",
-        backgroundColor: "#f5f5f5",
-      }}
-    >
-      {/* <div onClick={() => navigate("/portfolio")} className="portfolio-btn">
-        <div>포트폴리오</div>
+    <header className="header">
+      <div className="logo-container">
+        <div className="logo" onClick={() => navigate("/")}>
+          PortCoin
+        </div>
       </div>
-
-      <div onClick={() => navigate("/")} className="portfolio-btn">
-        <div>최근 시세보기</div>
-      </div> */}
 
       <div className="nav-container">
         <nav
@@ -95,13 +88,13 @@ const Header: React.FC = () => {
         <nav onClick={() => navigate("/")} className="mainbtn">
           시세 보기
         </nav>
-
-        <button onClick={() => navigate("/mypage")} className="mypage-btn">
-          <img className="account" src="/img/user.png" alt=""></img>
-        </button>
       </div>
 
       <div className="login-container">
+        <button onClick={() => navigate("/mypage")} className="mypage-btn">
+          <img className="account" src="/img/user.png" alt="프로필" />
+        </button>
+        
         {!isLoggedIn ? (
           <button type="button" className="login-btn" onClick={navigateToLogin}>
             로그인

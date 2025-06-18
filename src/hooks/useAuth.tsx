@@ -1,5 +1,5 @@
 // hooks/useAuth.ts
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 
@@ -10,8 +10,9 @@ interface DecodedToken {
 
 export const useAuth = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const refreshAccessToken = async () => {
+  const refreshAccessToken = useCallback(async () => {
     try {
       const res = await axios.post(
         "http://localhost:8080/api/v1/users/auth/refresh-token",
@@ -20,16 +21,21 @@ export const useAuth = () => {
       );
       localStorage.setItem("accessToken", res.data);
       setIsLoggedIn(true);
+      return true;
     } catch (err) {
+      console.error("토큰 갱신 실패:", err);
       setIsLoggedIn(false);
       localStorage.removeItem("accessToken");
+      return false;
     }
-  };
+  }, []);
 
-  const checkTokenAndRefresh = async () => {
+  const checkTokenAndRefresh = useCallback(async () => {
+    setIsLoading(true);
     const token = localStorage.getItem("accessToken");
     if (!token) {
       setIsLoggedIn(false);
+      setIsLoading(false);
       return;
     }
     try {
@@ -44,11 +50,12 @@ export const useAuth = () => {
       setIsLoggedIn(false);
       localStorage.removeItem("accessToken");
     }
-  };
+    setIsLoading(false);
+  }, [refreshAccessToken]);
 
   useEffect(() => {
     checkTokenAndRefresh();
-  }, []);
+  }, [checkTokenAndRefresh]);
 
-  return { isLoggedIn, setIsLoggedIn, refreshAccessToken };
+  return { isLoggedIn, setIsLoggedIn, refreshAccessToken, isLoading };
 };
