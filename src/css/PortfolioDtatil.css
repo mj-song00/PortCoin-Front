@@ -1,0 +1,210 @@
+.portfolio-detail-container {
+    width: 100%;
+    height: calc(100vh - 120px); /* Header와 Footer 높이를 뺀 높이 */
+    background-color: #f8f9fa;
+    display: flex;
+    padding: 20px;
+    gap: 30px;
+    box-sizing: border-box;
+}
+
+.circular-portfolio {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    min-height: 400px;
+    overflow-y: auto;
+}
+
+.circular-portfolio-detail {
+    flex: 1;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow-y: auto;
+    min-height: 400px;
+}
+
+/* 원형 차트 컨테이너 */
+.chart-container {
+    width: 100%;
+    max-width: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 원형 차트 래퍼 */
+.pie-chart-wrapper {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+/* 원형 차트 */
+.pie-chart {
+    transition: transform 0.3s ease;
+}
+
+.pie-chart:hover {
+    transform: scale(1.05);
+}
+
+/* 퍼센티지 라벨 */
+.percentage-label {
+    transition: all 0.3s ease;
+}
+
+.percentage-label:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    background: rgba(255, 255, 255, 1) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+}
+
+/* 범례 스타일 */
+.chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.legend-item:hover {
+    background-color: #f8f9fa;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+}
+
+.legend-text {
+    font-weight: 500;
+    color: #333;
+}
+
+/* 선그래프 섹션 */
+.line-chart-section {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.line-chart-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.line-chart-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    overflow-x: auto;
+}
+
+.line-chart {
+    background-color: white;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 코인 수익률 테이블 */
+.profit-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.profit-table th,
+.profit-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.profit-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+
+.profit-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* 수익률 색상 */
+.profit-positive {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.profit-negative {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+/* 섹션 제목 */
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .portfolio-detail-container {
+        flex-direction: column;
+        height: auto;
+        padding: 10px;
+    }
+    
+    .circular-portfolio,
+    .circular-portfolio-detail {
+        min-height: 300px;
+    }
+    
+    .chart-container {
+        width: 250px;
+        height: 250px;
+    }
+    
+    .chart-legend {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .line-chart-container {
+        padding: 10px;
+    }
+    
+    .line-chart {
+        transform: scale(0.8);
+        transform-origin: center;
+    }
+}

@@ -1,41 +1,232 @@
 .header {
-  display: flex; /* 가로 배치 */
-  justify-content: space-between; /* 좌우 끝 정렬 */
-  align-items: center; /* 세로 중앙 정렬 */
-  padding: 0 30px; /* 좌우 20px 여백 */
-  height: 60px; /* 원하는 높이 */
-  background-color: #f5f5f5; /* 배경색 (선택) */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  height: 60px;
+  background-color: #f5f5f5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
+
+/* 로고 영역 */
+.logo-container {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.logo:hover {
+  background-color: #e9ecef;
+  transform: translateY(-1px);
+}
+
 .nav-container {
   display: flex;
   align-items: center;
+  gap: 20px;
+  justify-content: flex-start;
+  flex: 1;
+  margin-left: 40px;
 }
 
 .portfolio-btn {
   cursor: pointer;
-  margin-left: 200px; /* 왼쪽에서 살짝 띄우기 */
   font-weight: bold;
   font-size: 1.1rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  color: #333;
+  text-decoration: none;
 }
+
+.portfolio-btn:hover {
+  background-color: #e9ecef;
+  transform: translateY(-1px);
+}
+
 .mainbtn {
   cursor: pointer;
-  margin-left: 200px; /* 왼쪽에서 살짝 띄우기 */
   font-weight: bold;
   font-size: 1.1rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  color: #333;
+  text-decoration: none;
+}
+
+.mainbtn:hover {
+  background-color: #e9ecef;
+  transform: translateY(-1px);
 }
 
 .mypage-btn {
   cursor: pointer;
-  margin-left: 800px; /* 왼쪽에서 살짝 띄우기 */
-  font-weight: bold;
-  font-size: 1.1rem;
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.mypage-btn:hover {
+  background-color: #e9ecef;
+  transform: scale(1.05);
 }
 
 .account {
   width: 32px;
   height: 32px;
-  border-radius: 50%; /* 원형 프로필로 보이게 */
+  border-radius: 50%;
   object-fit: cover;
   cursor: pointer;
   border: 2px solid #9af6e0;
+  transition: all 0.3s ease;
+}
+
+.account:hover {
+  border-color: #7ae6c7;
+  transform: scale(1.1);
+}
+
+.login-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.login-btn, .logout-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.login-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.login-btn:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.logout-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.logout-btn:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+}
+
+/* 태블릿 반응형 */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 15px;
+    height: 50px;
+  }
+  
+  .logo {
+    font-size: 1.3rem;
+    padding: 6px 10px;
+  }
+  
+  .nav-container {
+    gap: 15px;
+    margin-left: 150px;
+  }
+  
+  .portfolio-btn,
+  .mainbtn {
+    font-size: 1rem;
+    padding: 6px 12px;
+  }
+  
+  .account {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .login-btn, .logout-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+/* 모바일 반응형 */
+@media (max-width: 480px) {
+  .header {
+    padding: 0 10px;
+    height: 45px;
+  }
+  
+  .logo {
+    font-size: 1.1rem;
+    padding: 4px 8px;
+  }
+  
+  .nav-container {
+    gap: 10px;
+    margin-left: 100px;
+  }
+  
+  .portfolio-btn,
+  .mainbtn {
+    font-size: 0.9rem;
+    padding: 4px 8px;
+  }
+  
+  .account {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .login-btn, .logout-btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+}
+
+/* 매우 작은 화면 */
+@media (max-width: 360px) {
+  .header {
+    padding: 0 8px;
+  }
+  
+  .logo {
+    font-size: 1rem;
+    padding: 3px 6px;
+  }
+  
+  .portfolio-btn,
+  .mainbtn {
+    font-size: 0.8rem;
+    padding: 3px 6px;
+  }
+  
+  .nav-container {
+    gap: 8px;
+    margin-left: 80px;
+  }
 }
