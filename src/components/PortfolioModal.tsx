@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios, { AxiosError } from "axios";
+import PortfolioForm from "./PortfolioForm";
+import CoinTable from "./CoinTable";
 
 interface Coin {
   id: number;
@@ -179,81 +181,18 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({ onClose }) => {
         ❌
       </button>
 
-      <h2>포트폴리오 생성</h2>
-
-      <input
-        type="text"
-        value={portfolio.title}
-        onChange={handleTitleChange}
-        placeholder="포트폴리오 제목 입력"
-        style={{ width: "100%", padding: "8px", marginBottom: "15px" }}
+      <PortfolioForm 
+        title={portfolio.title}
+        onTitleChange={handleTitleChange}
       />
 
-      <h3>코인 추가</h3>
-      <table style={{ width: "100%", marginBottom: "10px" }}>
-        <thead>
-          <tr>
-            <th>코인명</th>
-            <th>수량</th>
-            <th>매수가</th>
-            <th>관리</th>
-          </tr>
-        </thead>
-        <tbody>
-          {portfolio.coins.map((coin) => (
-            <tr key={coin.uniqueId}>
-              <td>
-                <select
-                  value={coin.coinId ?? ""}
-                  onChange={(e) =>
-                    handleChangeCoin(
-                      coin.uniqueId,
-                      "coinId",
-                      Number(e.target.value)
-                    )
-                  }
-                >
-                  <option value="">선택하세요</option>
-                  {coinList.map((coin) => (
-                    <option key={coin.id} value={coin.id}>
-                      {coin.symbol}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td>
-                <input
-                  type="text"
-                  value={coin.amount}
-                  onChange={(e) =>
-                    handleChangeCoin(coin.uniqueId, "amount", e.target.value)
-                  }
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  value={coin.purchasePrice}
-                  onChange={(e) =>
-                    handleChangeCoin(
-                      coin.uniqueId,
-                      "purchasePrice",
-                      e.target.value
-                    )
-                  }
-                />
-              </td>
-              <td>
-                <button onClick={() => handleDeleteCoin(coin.uniqueId)}>
-                  🗑️
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <button onClick={handleAddCoin}>+ 코인 추가</button>
+      <CoinTable
+        coinList={coinList}
+        portfolioCoins={portfolio.coins}
+        onCoinChange={handleChangeCoin}
+        onDeleteCoin={handleDeleteCoin}
+        onAddCoin={handleAddCoin}
+      />
 
       <div style={{ marginTop: "20px" }}>
         <button onClick={handleSavePortfolio}>저장하기</button>
