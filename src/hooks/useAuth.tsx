@@ -20,6 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false); // 토큰 갱신 중 플래그
 
   // isLoggedIn 상태 변경 로그
   useEffect(() => {
@@ -27,39 +28,94 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [isLoggedIn]);
 
   const refreshAccessToken = async () => {
+    // 이미 갱신 중이면 기존 요청을 기다림
+    if (isRefreshing) {
+      console.log("⏳ 이미 토큰 갱신 중, 기존 요청 대기...");
+      return;
+    }
+
+    console.log("🔄 refreshAccessToken 호출됨");
+    setIsRefreshing(true);
+    
+    // 현재 쿠키 상태 확인 (개발용)
+    console.log("🍪 현재 쿠키:", document.cookie);
+    
     try {
+      console.log("🍪 쿠키 전송 확인 - withCredentials: true");
       const res = await axios.post(
         "http://localhost:8080/api/v1/users/auth/refresh-token",
         {},
-        { withCredentials: true }
+        { 
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
       );
-      localStorage.setItem("accessToken", res.data);
+      
+      console.log("📦 서버 응답:", res.data);
+      console.log("📦 응답 타입:", typeof res.data);
+      
+      // 응답 데이터가 문자열인지 확인
+      let token = typeof res.data === 'string' ? res.data : res.data.accessToken || res.data.token;
+      
+      if (!token) {
+        throw new Error("토큰이 응답에 없습니다");
+      }
+      
+      // Bearer 접두사가 포함되어 있다면 제거
+      if (token.startsWith('Bearer ')) {
+        token = token.substring(7); // "Bearer " (7글자) 제거
+      }
+      localStorage.setItem("accessToken", token);
       setIsLoggedIn(true);
-    } catch (err) {
+    } catch (err: any) {
+      
+      // 로그아웃 상태로 정리
       setIsLoggedIn(false);
       localStorage.removeItem("accessToken");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
   const checkTokenAndRefresh = async () => {
+    console.log("🔍 checkTokenAndRefresh 시작");
     setIsLoading(true);
     const token = localStorage.getItem("accessToken");
+    
     if (!token) {
-      setIsLoggedIn(false);
+      // accessToken이 없어도 refreshToken으로 새 토큰 발급 시도
+      try {
+        await refreshAccessToken();
+      } catch (error) {
+        console.log("❌ refreshToken으로도 토큰 발급 실패");
+        setIsLoggedIn(false);
+      }
       setIsLoading(false);
       return;
     }
+    
     try {
       const decoded = jwtDecode<DecodedToken>(token);
       const now = Date.now() / 1000;
       if (decoded.exp < now) {
+       
         await refreshAccessToken();
       } else {
+   
         setIsLoggedIn(true);
+        // 토큰이 유효하면 refreshToken 호출하지 않음
       }
     } catch (e) {
-      setIsLoggedIn(false);
-      localStorage.removeItem("accessToken");
+      console.log("❌ 토큰 디코딩 실패 - refreshToken으로 새 토큰 발급 시도");
+      // 토큰 디코딩 실패 시에도 refreshToken으로 새 토큰 발급 시도
+      try {
+        await refreshAccessToken();
+      } catch (error) {
+        console.log("❌ refreshToken으로도 토큰 발급 실패");
+        setIsLoggedIn(false);
+      }
     }
     setIsLoading(false);
   };
@@ -68,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const checkTokenExpiry = () => {
       const token = localStorage.getItem("accessToken");
-      if (token && isLoggedIn) {
+      if (token && isLoggedIn && !isRefreshing) {
         try {
           const decoded = jwtDecode<DecodedToken>(token);
           const now = Date.now() / 1000;
@@ -92,7 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     // 컴포넌트 언마운트 시 인터벌 정리
     return () => clearInterval(interval);
-  }, [isLoggedIn]);
+  }, [isLoggedIn, isRefreshing]);
 
   useEffect(() => {
     checkTokenAndRefresh();

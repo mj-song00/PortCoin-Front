@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../css/Main.css";
 import axios from "axios";
 import "../css/Header.css";
@@ -7,16 +7,11 @@ import { useAuth } from "../hooks/useAuth";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, setIsLoggedIn, refreshAccessToken, isLoading } = useAuth();
+  const { isLoggedIn, setIsLoggedIn } = useAuth();
   
   const navigateToLogin = () => {
     navigate("/login");
   };
-
-  useEffect(() => {
-    // 로그인 상태를 최신화하기 위해 refreshAccessToken을 호출
-    refreshAccessToken();
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -25,14 +20,15 @@ const Header: React.FC = () => {
         {},
         { withCredentials: true }
       );
-      localStorage.removeItem("accessToken");
-      setIsLoggedIn(false);
-      navigate("/");
     } catch (e) {
-      console.error("로그아웃 실패", e);
+        console.error("로그아웃 실패", e);
+    } finally {
+      // API 호출 성공/실패와 관계없이 클라이언트 상태 정리
       localStorage.removeItem("accessToken");
       setIsLoggedIn(false);
-      navigate("/");
+      
+      // 로그아웃 시 무조건 메인 페이지로 이동
+      navigate("/", { replace: true });
     }
   };
 
