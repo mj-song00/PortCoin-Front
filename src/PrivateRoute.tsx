@@ -36,7 +36,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     return children;
   } else {
     console.log("❌ PrivateRoute - 인증 안됨, 로그인 페이지로 리다이렉트");
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 };
 
