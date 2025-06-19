@@ -73,13 +73,8 @@ const PortfolioDetail: React.FC = () => {
     }
 
     const fetchPortfolioData = async (): Promise<PortfolioData[] | null> => {
-      console.log('fetchPortfolioData 시작');
-      console.log('portfolioId:', portfolioId);
-      console.log('portfolioId 타입:', typeof portfolioId);
-      console.log('portfolioId 길이:', portfolioId?.length);
-      
+    
       if (!portfolioId) {
-        console.error("portfolioId가 없습니다.");
         return null;
       }
 
@@ -87,7 +82,6 @@ const PortfolioDetail: React.FC = () => {
         const token = localStorage.getItem("accessToken");
         
         if (!token) {
-          console.error("액세스 토큰이 없습니다.");
           return null;
         }
 
@@ -270,36 +264,28 @@ const PortfolioDetail: React.FC = () => {
       
       try {
         // 포트폴리오 데이터를 먼저 가져옴
-        console.log('포트폴리오 데이터 가져오기 시작');
         const portfolioCoins = await fetchPortfolioData();
-        console.log('포트폴리오 데이터 가져오기 완료:', portfolioCoins);
-        
+
         // 포트폴리오 데이터가 있으면 시세 데이터 가져오기
         if (portfolioCoins && portfolioCoins.length > 0) {
-          console.log('시세 데이터 가져오기 시작 - 포트폴리오 코인 수:', portfolioCoins.length);
           await fetchPriceData(portfolioCoins);
-          console.log('시세 데이터 가져오기 완료');
         } else {
           console.log('포트폴리오 데이터가 없어서 시세 데이터 가져오기 건너뜀');
         }
-        
-        console.log('loadData 완료');
       } catch (error) {
-        console.error('loadData 에러:', error);
       } finally {
-        console.log('setLoading(false) 호출');
         setLoading(false);
       }
     };
 
     // 로그인 상태가 확인되고 로그인된 경우에만 데이터 로드
     if (!isLoading && isLoggedIn && portfolioId) {
-      console.log('PortfolioDetail useEffect 실행 - 로그인됨, portfolioId:', portfolioId);
+    
       loadData();
     } else if (!isLoading && !isLoggedIn) {
       // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
       // 단, isLoading이 true일 때는 리다이렉트하지 않음 (토큰 확인 중)
-      console.log('PortfolioDetail useEffect 실행 - 로그인 안됨, 리다이렉트');
+  
       window.location.href = '/login';
     }
     // isLoading이 true일 때는 아무것도 하지 않음 (토큰 확인 대기)
@@ -386,11 +372,11 @@ const PortfolioDetail: React.FC = () => {
   // 가격 포맷팅 함수
   const formatPrice = (price: number) => {
     if (price >= 1000) {
-      return `$${price.toLocaleString()}`;
+      return `₩${price.toLocaleString()}`;
     } else if (price >= 1) {
-      return `$${price.toFixed(2)}`;
+      return `₩${price.toFixed(2)}`;
     } else {
-      return `$${price.toFixed(4)}`;
+      return `₩${price.toFixed(4)}`;
     }
   };
 
@@ -553,31 +539,17 @@ const PortfolioDetail: React.FC = () => {
     const allPrices: number[] = [];
     portfolioData.forEach(coin => {
       const coinKey = coin.coin as keyof typeof priceData[0];
-      console.log(`코인 ${coin.coin}의 키:`, coinKey);
-      console.log(`priceData[0]에서 ${coinKey} 키 존재 여부:`, coinKey in priceData[0]);
       priceData.forEach((data, index) => {
         const price = data[coinKey] as number;
-        console.log(`코인 ${coin.coin}의 가격 (${index}):`, price, typeof price);
         if (typeof price === 'number' && !isNaN(price)) {
           allPrices.push(price);
         }
       });
     });
 
-    console.log('수집된 모든 가격:', allPrices);
-
-    if (allPrices.length === 0) {
-      console.log('유효한 가격 데이터가 없음');
-      console.log('priceData 첫 번째 항목:', priceData[0]);
-      console.log('portfolioData:', portfolioData);
-      return <div>유효한 가격 데이터가 없습니다.</div>;
-    }
-
     const minPrice = Math.min(...allPrices);
     const maxPrice = Math.max(...allPrices);
     const priceRange = maxPrice - minPrice;
-
-    console.log('가격 범위:', { minPrice, maxPrice, priceRange });
 
     // Y축 스케일 함수
     const getY = (price: number) => {
@@ -592,7 +564,6 @@ const PortfolioDetail: React.FC = () => {
       return padding + (index / (priceData.length - 1)) * graphWidth;
     };
 
-    console.log('차트 렌더링 시작');
     return (
       <svg width={chartWidth} height={chartHeight} className="line-chart">
         {/* 배경 그리드 */}
@@ -650,8 +621,6 @@ const PortfolioDetail: React.FC = () => {
             const y = getY(price);
             return `${x},${y}`;
           }).join(' ');
-
-          console.log(`코인 ${coin.coin}의 포인트:`, points);
 
           return (
             <g key={coin.coin}>
