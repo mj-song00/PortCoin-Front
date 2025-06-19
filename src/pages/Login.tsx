@@ -24,13 +24,13 @@ const Login: React.FC = () => {
         { email, password },
         { withCredentials: true }
       );
-
+      
       const accessToken = response.data;
       const tokenOnly = accessToken.replace("Bearer ", "");
       localStorage.setItem("accessToken", tokenOnly);
   
       setIsLoggedIn(true);
-      navigate("/");
+      navigate("/portfolio");
     } catch (error) {
 
       const e = error as AxiosError<ErrorResponse>;
