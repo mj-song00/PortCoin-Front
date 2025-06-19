@@ -49,16 +49,18 @@ const Side: React.FC = () => {
         return;
       }
 
-      await axios.patch(
+    const response = await axios.patch(
         `http://localhost:8080/api/v1/portfolio/${portfolioId}/delete`,
+        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          withCredentials: true, 
         }
       );
-
+      console.log("포트폴리오 삭제 응답:", response);
       console.log("포트폴리오 삭제 성공:", portfolioId);
       alert("포트폴리오가 삭제되었습니다.");
       
@@ -66,8 +68,11 @@ const Side: React.FC = () => {
       fetchPortfolios();
       
     } catch (error: any) {
-      console.error("포트폴리오 삭제 실패", error);
-      
+       console.error("포트폴리오 삭제 실패:", error.response);
+       console.error("포트폴리오 삭제 실패:", error);
+       console.error("에러 메시지:", error.message);
+       console.error("에러 코드:", error.code);
+       console.error("에러 전체:", error.toJSON && error.toJSON());
       if (error.response?.status === 401) {
         console.error("인증 실패 - 토큰 갱신 시도");
         try {
@@ -88,7 +93,7 @@ const Side: React.FC = () => {
   };
 
   // 사용자의 포트폴리오 목록 불러오기
-  const fetchPortfolios = async () => {
+  const fetchPortfolios = async (retryCount = 0) => {
     try {
       const token = localStorage.getItem("accessToken");
       
@@ -97,9 +102,6 @@ const Side: React.FC = () => {
         setLoading(false);
         return;
       }
-
-      console.log("토큰 확인:", token); // 디버깅용
-
       const response = await axios.get<ApiResponse<Portfolio[]>>(
         "http://localhost:8080/api/v1/portfolio",
         {
@@ -121,22 +123,33 @@ const Side: React.FC = () => {
         }
       }
     } catch (error: any) {
-      console.error("포트폴리오 목록 로드 실패", error);
-      console.error("에러 응답:", error.response); // 에러 응답 확인
-      
-      if (error.response?.status === 401) {
+     
+      if (error.response?.status === 401 && retryCount < 1) {
         console.error("인증 실패 - 토큰 갱신 시도");
         try {
           // refreshToken으로 토큰 갱신 시도
           await refreshAccessToken();
-          // 갱신 성공 시 다시 API 호출
-          fetchPortfolios();
+          
+          // 갱신 성공 후 잠시 대기 (토큰이 localStorage에 저장될 시간)
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // 갱신된 토큰으로 다시 API 호출 (재시도 횟수 증가)
+          fetchPortfolios(retryCount + 1);
           return;
         } catch (refreshError) {
           console.error("토큰 갱신 실패 - 로그인 페이지로 이동");
           navigate("/login");
           return;
         }
+      } else if (error.response?.status === 401 && retryCount >= 1) {
+  
+        // 토큰 갱신 후에도 401 오류가 발생하면 임시 데이터 표시
+        setPortfolios([
+          { id: "1", portfolioId: 1, name: "내 첫 번째 포트폴리오" },
+          { id: "2", portfolioId: 2, name: "암호화폐 투자 포트폴리오" },
+          { id: "3", portfolioId: 3, name: "안정형 포트폴리오" },
+        ]);
+        return;
       } else if (error.response?.status === 404) {
         console.error("API 엔드포인트를 찾을 수 없습니다.");
         // 404 에러 시에도 임시 데이터 사용
