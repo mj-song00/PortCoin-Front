@@ -33,6 +33,60 @@ const Side: React.FC = () => {
     fetchPortfolios();
   };
 
+  // 포트폴리오 삭제 함수
+  const handleDeletePortfolio = async (portfolioId: number, portfolioName: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // 포트폴리오 클릭 이벤트 방지
+    
+    if (!window.confirm(`"${portfolioName}" 포트폴리오를 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      
+      if (!token) {
+        console.error("액세스 토큰이 없습니다.");
+        return;
+      }
+
+      await axios.patch(
+        `http://localhost:8080/api/v1/portfolio/${portfolioId}/delete`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log("포트폴리오 삭제 성공:", portfolioId);
+      alert("포트폴리오가 삭제되었습니다.");
+      
+      // 삭제 후 목록 새로고침
+      fetchPortfolios();
+      
+    } catch (error: any) {
+      console.error("포트폴리오 삭제 실패", error);
+      
+      if (error.response?.status === 401) {
+        console.error("인증 실패 - 토큰 갱신 시도");
+        try {
+          await refreshAccessToken();
+          // 갱신 성공 시 다시 삭제 시도
+          handleDeletePortfolio(portfolioId, portfolioName, e);
+          return;
+        } catch (refreshError) {
+          console.error("토큰 갱신 실패");
+          alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+          navigate("/login");
+          return;
+        }
+      } else {
+        alert("포트폴리오 삭제에 실패했습니다.");
+      }
+    }
+  };
+
   // 사용자의 포트폴리오 목록 불러오기
   const fetchPortfolios = async () => {
     try {
@@ -57,15 +111,12 @@ const Side: React.FC = () => {
       );
       
       if (response.data.data) {
-        console.log('포트폴리오 목록 로드 성공:', response.data.data);
         setPortfolios(response.data.data);
       } else {
         // data 필드가 없으면 전체 응답을 배열로 처리
         if (Array.isArray(response.data)) {
-          console.log('포트폴리오 목록 로드 성공 (배열):', response.data);
           setPortfolios(response.data);
         } else {
-          console.log('포트폴리오 목록이 비어있음');
           setPortfolios([]);
         }
       }
@@ -114,21 +165,19 @@ const Side: React.FC = () => {
       fetchPortfolios();
     } else if (!isLoading && !isLoggedIn) {
       // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
+      // 단, isLoading이 true일 때는 리다이렉트하지 않음 (토큰 확인 중)
       navigate("/login");
     }
+    // isLoading이 true일 때는 아무것도 하지 않음 (토큰 확인 대기)
   }, [isLoggedIn, isLoading, navigate]);
 
   // 포트폴리오 목록 상태 모니터링
   useEffect(() => {
-    console.log('포트폴리오 목록 상태 변경:', portfolios);
   }, [portfolios]);
 
   const handlePortfolioClick = (portfolioId: number) => {
     const url = `/portfolio/${portfolioId}`;
-    console.log('포트폴리오 클릭:', { portfolioId, url });
-    console.log('현재 URL (클릭 전):', window.location.pathname);
     navigate(url);
-    console.log('navigate 호출 완료');
   };
 
   return (
@@ -174,35 +223,75 @@ const Side: React.FC = () => {
             {portfolios.map((portfolio, index) => {
               console.log('포트폴리오 버튼 렌더링:', portfolio);
               return (
-                <button
+                <div
                   key={`${portfolio.id}-${index}`}
-                  onClick={() => {
-                    console.log('포트폴리오 버튼 클릭됨:', portfolio);
-                    console.log('클릭한 portfolioId:', portfolio.portfolioId);
-                    handlePortfolioClick(portfolio.portfolioId);
-                  }}
                   style={{
-                    padding: "8px 12px",
-                    border: "none",
-                    background: "white",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    textAlign: "left",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                    e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
                   }}
                 >
-                  {portfolio.name}
-                </button>
+                  <button
+                    onClick={() => {
+                      console.log('포트폴리오 버튼 클릭됨:', portfolio);
+                      console.log('클릭한 portfolioId:', portfolio.portfolioId);
+                      handlePortfolioClick(portfolio.portfolioId);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      border: "none",
+                      background: "white",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      textAlign: "left",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+                    }}
+                  >
+                    {portfolio.name}
+                  </button>
+                  
+                  {/* 삭제 버튼 */}
+                  <button
+                    onClick={(e) => handleDeletePortfolio(portfolio.portfolioId, portfolio.name, e)}
+                    style={{
+                      position: "absolute",
+                      right: "8px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      color: "#ff6b6b",
+                      padding: "2px 4px",
+                      borderRadius: "3px",
+                      opacity: 0,
+                      transition: "opacity 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.opacity = "1";
+                      e.currentTarget.style.backgroundColor = "#ffe6e6";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = "0";
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                    title="포트폴리오 삭제"
+                  >
+                    🗑️
+                  </button>
+                </div>
               );
             })}
             {portfolios.length === 0 && (

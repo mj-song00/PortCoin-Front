@@ -18,7 +18,7 @@ const Ranking: React.FC<Props> = ({ data }) => {
             <th>총 계</th>
           </tr>
         </thead>
-        <body>
+        <tbody>
           {data.map((coin, index) => (
             <tr key={index} className="coin-container">
               <td>
@@ -31,7 +31,7 @@ const Ranking: React.FC<Props> = ({ data }) => {
               <td>{coin.total_volume.toLocaleString()}</td>
             </tr>
           ))}
-        </body>
+        </tbody>
       </table>
     </div>
   );

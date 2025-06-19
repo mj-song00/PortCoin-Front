@@ -1,50 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/Main.css";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
 import "../css/Header.css";
 import { useAuth } from "../hooks/useAuth";
 
-interface DecodedToken {
-  exp: number;
-  sub: string;
-  role: string;
-}
-
 const Header: React.FC = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
-  const { refreshAccessToken } = useAuth();
+  const { isLoggedIn, setIsLoggedIn, refreshAccessToken, isLoading } = useAuth();
   
   const navigateToLogin = () => {
     navigate("/login");
   };
 
-  const checkTokenAndRefresh = async () => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      setIsLoggedIn(false);
-      return;
-    }
-    try {
-      const decoded = jwtDecode<DecodedToken>(token);
-      const now = Date.now() / 1000;
-      if (decoded.exp < now) {
-        console.log("accessToken 만료, 리프레시 토큰 요청");
-        await refreshAccessToken();
-      } else {
-        setIsLoggedIn(true);
-      }
-    } catch (e) {
-      console.log("토큰 디코딩 실패 또는 유효하지 않음", e);
-      setIsLoggedIn(false);
-      localStorage.removeItem("accessToken");
-    }
-  };
-
   useEffect(() => {
-    checkTokenAndRefresh();
+    // 로그인 상태를 최신화하기 위해 refreshAccessToken을 호출
+    refreshAccessToken();
   }, []);
 
   const handleLogout = async () => {

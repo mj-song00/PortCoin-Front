@@ -5,15 +5,13 @@ import SignUp from "./pages/SignUp";
 import Portfolio from "./pages/Portfolio";
 import PortfolioDetail from "./components/PortfolioDetail";
 import Main from "./pages/Main";
-import PrivateRoute from "./PrivateRoute"
-import { useAuth } from "./hooks/useAuth";
+import PrivateRoute from "./PrivateRoute";
+import { useAuth, AuthProvider } from "./hooks/useAuth";
 
 const App: React.FC = () => {
-   const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn, isLoading } = useAuth();
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  console.log("📱 App 컴포넌트 - 현재 isLoggedIn:", isLoggedIn);
 
   return (
     <div className="App">
@@ -21,19 +19,19 @@ const App: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         <Route
-          path="/portfolio/:portfolioId"
+          path="/portfolio"
           element={
-              <PrivateRoute isLoggedIn={isLoggedIn}>
-            <PortfolioDetail />
-              </PrivateRoute>
+            <PrivateRoute isLoggedIn={isLoggedIn} isLoading={isLoading}>
+              <Portfolio />
+            </PrivateRoute>
           }
         />
         <Route
-          path="/portfolio"
+          path="/portfolio/:portfolioId"
           element={
-               <PrivateRoute isLoggedIn={isLoggedIn}>
-            <Portfolio />
-              </PrivateRoute>
+            <PrivateRoute isLoggedIn={isLoggedIn} isLoading={isLoading}>
+              <PortfolioDetail />
+            </PrivateRoute>
           }
         />
         <Route path="/" element={<Main />} />
@@ -42,4 +40,10 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+const AppWithProvider: React.FC = () => (
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+);
+
+export default AppWithProvider;

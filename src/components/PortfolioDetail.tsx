@@ -298,9 +298,11 @@ const PortfolioDetail: React.FC = () => {
       loadData();
     } else if (!isLoading && !isLoggedIn) {
       // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
+      // 단, isLoading이 true일 때는 리다이렉트하지 않음 (토큰 확인 중)
       console.log('PortfolioDetail useEffect 실행 - 로그인 안됨, 리다이렉트');
       window.location.href = '/login';
     }
+    // isLoading이 true일 때는 아무것도 하지 않음 (토큰 확인 대기)
   }, [isLoggedIn, isLoading, portfolioId]);
 
   // 렌더링 시점에 데이터 상태 확인

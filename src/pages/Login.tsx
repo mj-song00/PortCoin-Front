@@ -3,11 +3,13 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import { useNavigate } from "react-router-dom";
 import axios, { AxiosError } from "axios";
+import { useAuth } from "../hooks/useAuth";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { setIsLoggedIn } = useAuth();
 
   interface ErrorResponse {
     statusCode: number;
@@ -26,13 +28,15 @@ const Login: React.FC = () => {
       const accessToken = response.data;
       const tokenOnly = accessToken.replace("Bearer ", "");
       localStorage.setItem("accessToken", tokenOnly);
+  
+      setIsLoggedIn(true);
       navigate("/");
     } catch (error) {
+
       const e = error as AxiosError<ErrorResponse>;
 
       if (e.response?.data) {
         const { message } = e.response.data;
-
         alert(message);
       } else {
         alert("로그인 실패: 서버 오류가 발생했습니다.");
