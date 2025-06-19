@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import PortfolioModal from "./PortfolioModal";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +22,10 @@ const Side: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { refreshAccessToken, isLoggedIn, isLoading } = useAuth();
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState<string>("");
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -31,6 +35,53 @@ const Side: React.FC = () => {
     setIsModalOpen(false);
     // 모달이 닫힐 때 포트폴리오 목록 새로고침
     fetchPortfolios();
+  };
+
+  //포트폴리오 제목 수정 함수 (수정: 삭제 함수 호출 제거)
+  const handleUpdatePortfolio = async (portfolioId: number, newTitle: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm(`포트폴리오 제목을 "${newTitle}"(으)로 수정하시겠습니까?`)) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.error("액세스 토큰이 없습니다.");
+        return;
+      }
+      await axios.patch(
+        `http://localhost:8080/api/v1/portfolio/${portfolioId}`,
+        { title: newTitle },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          withCredentials: true, 
+        }
+      );  
+      alert("포트폴리오 제목이 수정되었습니다.");
+      setEditingId(null);
+      setEditTitle("");
+      fetchPortfolios();
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        console.error("인증 실패 - 토큰 갱신 시도");
+        try {
+          await refreshAccessToken();
+          // 갱신 성공 시 다시 수정 시도
+          await handleUpdatePortfolio(portfolioId, newTitle);
+          return;
+        } catch (refreshError) {
+          console.error("토큰 갱신 실패");
+          alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+          navigate("/login");
+          return;
+        }
+      } else {
+        alert("포트폴리오 수정에 실패했습니다.");
+      }
+    }
   };
 
   // 포트폴리오 삭제 함수
@@ -48,8 +99,7 @@ const Side: React.FC = () => {
         console.error("액세스 토큰이 없습니다.");
         return;
       }
-
-    const response = await axios.patch(
+        await axios.patch(
         `http://localhost:8080/api/v1/portfolio/${portfolioId}/delete`,
         {},
         {
@@ -60,19 +110,14 @@ const Side: React.FC = () => {
           withCredentials: true, 
         }
       );
-      console.log("포트폴리오 삭제 응답:", response);
-      console.log("포트폴리오 삭제 성공:", portfolioId);
+   
       alert("포트폴리오가 삭제되었습니다.");
       
       // 삭제 후 목록 새로고침
       fetchPortfolios();
       
     } catch (error: any) {
-       console.error("포트폴리오 삭제 실패:", error.response);
-       console.error("포트폴리오 삭제 실패:", error);
-       console.error("에러 메시지:", error.message);
-       console.error("에러 코드:", error.code);
-       console.error("에러 전체:", error.toJSON && error.toJSON());
+   
       if (error.response?.status === 401) {
         console.error("인증 실패 - 토큰 갱신 시도");
         try {
@@ -188,6 +233,23 @@ const Side: React.FC = () => {
   useEffect(() => {
   }, [portfolios]);
 
+  // 바깥 클릭 시 메뉴 닫기
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+    if (openMenuId !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openMenuId]);
+
   const handlePortfolioClick = (portfolioId: number) => {
     const url = `/portfolio/${portfolioId}`;
     navigate(url);
@@ -233,80 +295,131 @@ const Side: React.FC = () => {
           <div style={{ fontSize: "12px", color: "#999" }}>로딩 중...</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {portfolios.map((portfolio, index) => {
-              console.log('포트폴리오 버튼 렌더링:', portfolio);
-              return (
-                <div
-                  key={`${portfolio.id}-${index}`}
-                  style={{
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <button
-                    onClick={() => {
-                      console.log('포트폴리오 버튼 클릭됨:', portfolio);
-                      console.log('클릭한 portfolioId:', portfolio.portfolioId);
-                      handlePortfolioClick(portfolio.portfolioId);
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: "8px 12px",
-                      border: "none",
-                      background: "white",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      fontSize: "13px",
-                      textAlign: "left",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                      transition: "all 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-1px)";
-                      e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
-                    }}
-                  >
-                    {portfolio.name}
-                  </button>
-                  
-                  {/* 삭제 버튼 */}
-                  <button
-                    onClick={(e) => handleDeletePortfolio(portfolio.portfolioId, portfolio.name, e)}
-                    style={{
-                      position: "absolute",
-                      right: "8px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      color: "#ff6b6b",
-                      padding: "2px 4px",
-                      borderRadius: "3px",
-                      opacity: 0,
-                      transition: "opacity 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.opacity = "1";
-                      e.currentTarget.style.backgroundColor = "#ffe6e6";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.opacity = "0";
-                      e.currentTarget.style.backgroundColor = "transparent";
-                    }}
-                    title="포트폴리오 삭제"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              );
-            })}
+            {portfolios.map((portfolio, index) => (
+              <div
+                key={`${portfolio.id}-${index}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  marginBottom: "4px",
+                  position: "relative",
+                }}
+              >
+                {editingId === portfolio.portfolioId ? (
+                  <>
+                    <input
+                      value={editTitle}
+                      onChange={e => setEditTitle(e.target.value)}
+                      style={{ flex: 1, padding: "6px 8px", fontSize: "13px", borderRadius: "6px", border: "1px solid #ccc" }}
+                    />
+                    <button
+                      onClick={() => handleUpdatePortfolio(portfolio.portfolioId, editTitle)}
+                      style={{ marginLeft: "2px", color: "#007bff", background: "none", border: "none", cursor: "pointer", fontSize: "14px" }}
+                    >저장</button>
+                    <button
+                      onClick={() => { setEditingId(null); setEditTitle(""); }}
+                      style={{ marginLeft: "2px", color: "#888", background: "none", border: "none", cursor: "pointer", fontSize: "14px" }}
+                    >취소</button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handlePortfolioClick(portfolio.portfolioId)}
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        border: "none",
+                        background: "white",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        textAlign: "left",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      {portfolio.name}
+                    </button>
+                    {/* ... (더보기) 버튼 */}
+                    <button
+                      onClick={() =>
+                        setOpenMenuId(openMenuId === portfolio.portfolioId ? null : portfolio.portfolioId)
+                      }
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "18px",
+                        color: "#888",
+                        padding: "2px 6px",
+                        borderRadius: "3px",
+                      }}
+                      title="더보기"
+                    >
+                      ...
+                    </button>
+                    {/* 드롭다운 메뉴 */}
+                    {openMenuId === portfolio.portfolioId && (
+                      <div
+                        ref={menuRef}
+                        style={{
+                          position: "absolute",
+                          right: 0,
+                          top: "100%",
+                          background: "#fff",
+                          border: "1px solid #ddd",
+                          borderRadius: "6px",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                          zIndex: 10,
+                          minWidth: "80px",
+                          padding: "4px 0",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px",
+                        }}
+                      >
+                        <button
+                          onClick={() => {
+                            setEditingId(portfolio.portfolioId);
+                            setEditTitle(portfolio.name);
+                            setOpenMenuId(null);
+                          }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            color: "#007bff",
+                            padding: "6px 12px",
+                            textAlign: "left",
+                          }}
+                        >
+                          ✏️ 수정
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            handleDeletePortfolio(portfolio.portfolioId, portfolio.name, e);
+                            setOpenMenuId(null);
+                          }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            color: "#ff6b6b",
+                            padding: "6px 12px",
+                            textAlign: "left",
+                          }}
+                        >
+                          🗑️ 삭제
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
             {portfolios.length === 0 && (
               <div style={{ fontSize: "12px", color: "#999", textAlign: "center" }}>
                 포트폴리오가 없습니다
