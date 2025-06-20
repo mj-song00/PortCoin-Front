@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import Header from './Header';
 import Side from './Side';
 import Footer from './Footer';
+import qs from 'qs';
 
 // 서버에서 오는 실제 데이터 구조
 interface ServerCoin {
@@ -15,7 +16,9 @@ interface ServerCoin {
   name: string;
   amount: number;
   purchasePrice: number;
-  profit?: number; // 서버에서 내려줄 수익률(%) 또는 수익금
+  currentPrice: number;
+  change_24h: number;
+  profitLoss?: number;
 }
 
 interface ServerPortfolioData {
@@ -29,7 +32,7 @@ interface PortfolioData {
   coin: string;
   amount: number;
   percentage: number;
-  profit: number;
+  profit: number | null;
   color: string;
   price: number;
   change24h: number;
@@ -61,40 +64,12 @@ const PortfolioDetail: React.FC = () => {
 
   // 서버에서 포트폴리오 데이터 불러오기
   useEffect(() => {
-    console.log('PortfolioDetail useEffect 실행됨', {
-      isLoggedIn,
-      isLoading,
-      portfolioId,
-      loading
-    });
-
     // portfolioId가 변경되면 loading 상태를 초기화
     if (portfolioId) {
       setLoading(true);
     }
 
-    //수익률 계산 api 호출
-    const calculateProfit = async (portfolioId: string) => {
-      const token = localStorage.getItem("accessToken");
-      if (!token) return null;
-      try {
-        const response = await axios.get<ApiResponse<ServerPortfolioData>>(
-          `http://localhost:8080/api/v1/portfolio-coins/value?portfolioId=${portfolioId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        return response.data.data;
-      } catch (error) {
-        console.error("수익률 계산 API 호출 실패", error);
-        return null;
-      }
-    };
-
-    const fetchPortfolioData = async (): Promise<PortfolioData[] | null> => {
+    const fetchPortfolioData = async (change24hMap: { [symbol: string]: number } = {}): Promise<PortfolioData[] | null> => {
       if (!portfolioId) {
         return null;
       }
@@ -103,6 +78,7 @@ const PortfolioDetail: React.FC = () => {
         if (!token) {
           return null;
         }
+
         const response = await axios.get<ApiResponse<ServerPortfolioData>>(
           `http://localhost:8080/api/v1/portfolio/${portfolioId}`,
           {
@@ -112,49 +88,45 @@ const PortfolioDetail: React.FC = () => {
             },
           }
         );
+        
         if (response.data.data) {
           const serverData = response.data.data;
           setPortfolioName(serverData.name);
-          const totalValue = serverData.coins.reduce((sum, coin) => {
-            return sum + (coin.amount * coin.purchasePrice);
+
+          // 전체 포트폴리오의 현재 가치 총합을 계산 (currentPrice 기준)
+          const totalCurrentValue = serverData.coins.reduce((sum, coin) => {
+            return sum + (coin.amount * coin.currentPrice);
           }, 0);
+
           const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'];
-          // 1차 변환 (profit은 0)
+      
           let convertedData: PortfolioData[] = serverData.coins.map((coin, index) => {
-            const currentValue = coin.amount * coin.purchasePrice;
-            const percentage = totalValue > 0 ? (currentValue / totalValue) * 100 : 0;
+            const currentPrice = coin.currentPrice ?? coin.purchasePrice;
+            const coinValue = coin.amount * currentPrice;
+            const percentage = totalCurrentValue > 0 ? (coinValue / totalCurrentValue) * 100 : 0;
+            const symbol = coin.symbol.toLowerCase();
             return {
               coin: coin.symbol,
               amount: coin.amount,
-              percentage: Math.round(percentage * 100) / 100,
-              profit: 0, // 실제 수익률은 아래에서 대입
+              percentage: parseFloat(percentage.toFixed(2)),
+              profit: coin.profitLoss ?? 0,
               color: colors[index % colors.length],
-              price: coin.purchasePrice,
-              change24h: 0
+              price: currentPrice,
+              change24h: change24hMap[symbol] ?? coin.change_24h ?? 0 // 우선순위: API에서 받은 값 > 기존 값
             };
           });
-          // 2차: 수익률 API로 profit 값 채우기
-          const profitData = await calculateProfit(portfolioId);
-          if (profitData && Array.isArray(profitData.coins)) {
-            convertedData = convertedData.map((item) => {
-              const found = profitData.coins.find((c: any) => c.symbol === item.coin);
-              return found ? { ...item, profit: found.profit ?? 0 } : item;
-            });
-          }
           setPortfolioData(convertedData);
           return convertedData;
         }
         return null;
       } catch (error: any) {
-        console.error("포트폴리오 데이터 로드 실패", error);
         
         if (error.response?.status === 401) {
-          console.error("인증 실패 - 토큰 갱신 시도");
           try {
             await refreshAccessToken();
             return await fetchPortfolioData(); // 토큰 갱신 후 다시 시도
           } catch (refreshError) {
-            console.error("토큰 갱신 실패");
+          
             // 로그인 페이지로 리다이렉트
             window.location.href = '/login';
             return null;
@@ -162,6 +134,7 @@ const PortfolioDetail: React.FC = () => {
         }
         
         // 에러 시 임시 데이터 사용
+        console.log('에러로 인해 임시 데이터 사용 - 에러 타입:', error.name);
         const fallbackData = [
           { coin: 'BTC', amount: 0.5, percentage: 40, profit: 15.2, color: '#ff6b6b', price: 43250, change24h: 2.3 },
           { coin: 'ETH', amount: 2.0, percentage: 30, profit: 8.7, color: '#4ecdc4', price: 2650, change24h: -1.2 },
@@ -179,35 +152,56 @@ const PortfolioDetail: React.FC = () => {
     const fetchPriceData = async (portfolioCoins: PortfolioData[]) => {
       try {
         const token = localStorage.getItem("accessToken");
-        
         if (!token) {
           console.error("액세스 토큰이 없습니다.");
-          return;
+          return {};
         }
-        
-        // 포트폴리오 데이터에서 코인 ID들을 추출
-        const coinIds = portfolioCoins.map(coin => coin.coin.toLowerCase());
-        
-        // 쿼리 파라미터로 코인 ID들을 전달
-        const queryParams = coinIds.map(id => `coinIds=${id}`).join('&');
-        const url = `http://localhost:8080/api/v1/chart/history?${queryParams}`;
-        
-        console.log('시세 데이터 요청 URL:', url);
-        console.log('요청할 코인 ID들:', coinIds);
-        console.log('포트폴리오 코인들:', portfolioCoins.map(c => ({ coin: c.coin, symbol: c.coin })));
-        
-        const response = await axios.get<ApiResponse<PriceData[]>>(
-          url,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+
+        // 각 코인에 대한 API 요청을 Promise 배열로 생성
+        const priceRequests = portfolioCoins.map(coin => {
+          const symbol = coin.coin.toLowerCase();
+          const days = 1;
+          return axios.post(
+            'http://localhost:8080/api/v1/chart/history',
+            { symbol, days },
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ).then(response => ({
+            symbol,
+            prices: response.data.data.prices // 실제 데이터 구조 반영
+          }));
+        });
+
+        // Promise.all로 모든 요청을 동시에 실행
+        const responses = await Promise.all(priceRequests);
+
+        // 각 코인별로 priceChangePercentage24h 값을 추출
+        const change24hMap: { [symbol: string]: number } = {};
+        responses.forEach(response => {
+          const { symbol, prices } = response;
+          if (Array.isArray(prices) && prices.length > 0) {
+            change24hMap[symbol] = prices[0].priceChangePercentage24h ?? 0;
           }
-        );
-        if (response.data.data) {
-          console.log('서버에서 받은 시세 데이터:', response.data.data);
-          setPriceData(response.data.data);
-        }
+        });
+
+        // 기존 priceData 병합 로직 (차트용 데이터)
+        const mergedPriceData: { [time: string]: { time: string, [key: string]: any } } = {};
+        responses.forEach(response => {
+          const { symbol, prices } = response;
+          if (Array.isArray(prices)) {
+            prices.forEach((entry: any) => {
+              const { date, price } = entry;
+              if (!mergedPriceData[date]) {
+                mergedPriceData[date] = { time: date };
+              }
+              mergedPriceData[date][symbol] = price;
+            });
+          }
+        });
+        const finalPriceData = Object.values(mergedPriceData);
+        setPriceData(finalPriceData);
+        return change24hMap;
       } catch (error: any) {
         console.error("시세 데이터 로드 실패", error);
         
@@ -218,60 +212,61 @@ const PortfolioDetail: React.FC = () => {
             // 토큰 갱신 후 다시 시도
             const token = localStorage.getItem("accessToken");
             if (token) {
-              const coinIds = portfolioCoins.map(coin => coin.coin.toLowerCase());
-              const queryParams = coinIds.map(id => `coinIds=${id}`).join('&');
-              const url = `http://localhost:8080/api/v1/chart/history?${queryParams}`;
+              const symbols = portfolioCoins.map(coin => coin.coin.toLowerCase());
+              const days = 1;
               
-              const response = await axios.get<ApiResponse<PriceData[]>>(
-                url,
-                {
+              const response = await axios.post<ApiResponse<PriceData[]>>(
+                'http://localhost:8080/api/v1/chart/history',
+                { // 요청 본문 (body)
+                  symbol: symbols,
+                  days: days
+                },
+                { // axios config
                   headers: {
                     Authorization: `Bearer ${token}`,
-                  },
+                  }
                 }
               );
               if (response.data.data) {
                 setPriceData(response.data.data);
-                return;
+                return {};
               }
             }
           } catch (refreshError) {
             console.error("토큰 갱신 실패");
             window.location.href = '/login';
-            return;
+            return {};
           }
         }
         
         // 에러 시 임시 데이터 사용 - 포트폴리오에 있는 코인들만 포함
         console.log('임시 데이터 생성 - 포트폴리오 코인들:', portfolioCoins);
         const fallbackData = [
-          { time: '00:00' },
-          { time: '02:00' },
-          { time: '04:00' },
-          { time: '06:00' },
-          { time: '08:00' },
-          { time: '10:00' },
-          { time: '12:00' },
-          { time: '14:00' },
-          { time: '16:00' },
-          { time: '18:00' },
-          { time: '20:00' },
-          { time: '22:00' },
+          { time: '00:00' }, { time: '02:00' }, { time: '04:00' }, { time: '06:00' },
+          { time: '08:00' }, { time: '10:00' }, { time: '12:00' }, { time: '14:00' },
+          { time: '16:00' }, { time: '18:00' }, { time: '20:00' }, { time: '22:00' },
           { time: '24:00' },
         ];
         
         // 포트폴리오에 있는 각 코인에 대해 임시 가격 데이터 추가
         portfolioCoins.forEach(coin => {
-          const basePrice = coin.price; // 포트폴리오의 구매가를 기준으로
+          // price는 이미 current_price 또는 purchase_price로 설정되어 있음
+          const basePrice = coin.price; 
+          console.log(`[TempData] 임시 데이터 생성 중: 코인=${coin.coin}, 기준 가격(basePrice)=${basePrice}, 타입=${typeof basePrice}`);
+
           fallbackData.forEach((data, index) => {
-            // 시간대별로 약간의 변동을 주어 차트가 보이도록 함
-            const variation = (Math.random() - 0.5) * 0.1; // ±5% 변동
-            (data as any)[coin.coin] = basePrice * (1 + variation);
+            const variation = (Math.random() - 0.5) * 0.1;
+            const newPrice = basePrice * (1 + variation);
+            if (isNaN(newPrice)) {
+              console.error(`[TempData] 계산된 가격이 NaN입니다! basePrice=${basePrice}, variation=${variation}`);
+            }
+            (data as any)[coin.coin] = newPrice;
           });
         });
         
         console.log('생성된 임시 데이터:', fallbackData);
         setPriceData(fallbackData);
+        return {};
       }
     };
 
@@ -282,30 +277,48 @@ const PortfolioDetail: React.FC = () => {
       console.log('loadData 시작');
       
       try {
-        // 포트폴리오 데이터를 먼저 가져옴
+        // 포트폴리오 데이터를 먼저 가져옴 (change24hMap 없이)
         const portfolioCoins = await fetchPortfolioData();
+        console.log('loadData: fetchPortfolioData로부터 받은 데이터:', portfolioCoins);
 
         // 포트폴리오 데이터가 있으면 시세 데이터 가져오기
         if (portfolioCoins && portfolioCoins.length > 0) {
-          await fetchPriceData(portfolioCoins);
+          console.log('포트폴리오 데이터 있음, 시세 데이터 가져오기 시작');
+          const change24hMap = await fetchPriceData(portfolioCoins);
+          await fetchPortfolioData(change24hMap); // change24hMap을 넘겨서 24h 변동 반영
         } else {
           console.log('포트폴리오 데이터가 없어서 시세 데이터 가져오기 건너뜀');
         }
       } catch (error) {
+        console.error('loadData에서 에러 발생:', error);
       } finally {
         setLoading(false);
       }
     };
 
     // 로그인 상태가 확인되고 로그인된 경우에만 데이터 로드
-    if (!isLoading && isLoggedIn && portfolioId) {
+    console.log('useEffect 조건 확인:', {
+      isLoading,
+      isLoggedIn,
+      portfolioId,
+      shouldLoadData: !isLoading && isLoggedIn && portfolioId
+    });
     
+    if (!isLoading && isLoggedIn && portfolioId) {
+      console.log('loadData 호출 조건 만족 - loadData 실행');
       loadData();
     } else if (!isLoading && !isLoggedIn) {
+      console.log('로그인되지 않음 - 로그인 페이지로 리다이렉트');
       // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
       // 단, isLoading이 true일 때는 리다이렉트하지 않음 (토큰 확인 중)
   
       window.location.href = '/login';
+    } else {
+      console.log('loadData 호출 조건 불만족:', {
+        isLoading,
+        isLoggedIn,
+        portfolioId
+      });
     }
     // isLoading이 true일 때는 아무것도 하지 않음 (토큰 확인 대기)
   }, [isLoggedIn, isLoading, portfolioId]);
@@ -390,13 +403,9 @@ const PortfolioDetail: React.FC = () => {
 
   // 가격 포맷팅 함수
   const formatPrice = (price: number) => {
-    if (price >= 1000) {
-      return `₩${price.toLocaleString()}`;
-    } else if (price >= 1) {
-      return `₩${price.toFixed(2)}`;
-    } else {
-      return `₩${price.toFixed(4)}`;
-    }
+    // toLocaleString을 사용하여 천 단위 구분 기호를 추가하되,
+    // maximumFractionDigits 옵션으로 소수점이 반올림되지 않도록 합니다.
+    return `₩${(price ?? 0).toLocaleString('ko-KR', { maximumFractionDigits: 20 })}`;
   };
 
   // 코인 클릭 핸들러
@@ -413,6 +422,12 @@ const PortfolioDetail: React.FC = () => {
 
   // 선택된 코인만 표시하는 선그래프 생성 함수
   const createSelectedCoinChart = () => {
+    console.log('createSelectedCoinChart 호출됨:', {
+      selectedCoin,
+      priceDataLength: priceData.length,
+      priceDataSample: priceData.length > 0 ? priceData[0] : null
+    });
+
     if (!selectedCoin || priceData.length === 0) {
       return <div>차트 데이터가 없습니다.</div>;
     }
@@ -431,6 +446,7 @@ const PortfolioDetail: React.FC = () => {
     }).filter(price => price !== null) as number[];
 
     if (coinPrices.length === 0) {
+      console.log(`'${selectedCoin.coin}'에 대한 유효한 가격 데이터가 없습니다.`);
       return <div>유효한 가격 데이터가 없습니다.</div>;
     }
 
@@ -557,14 +573,30 @@ const PortfolioDetail: React.FC = () => {
     // 모든 코인의 가격 데이터를 수집하여 최소/최대값 계산
     const allPrices: number[] = [];
     portfolioData.forEach(coin => {
-      const coinKey = coin.coin as keyof typeof priceData[0];
+      const coinKey = coin.coin;
+      console.log(`[Chart] '${coinKey}' 코인의 가격을 찾는 중...`);
+
       priceData.forEach((data, index) => {
+        // 첫 번째 데이터 항목에 대해서만 키와 값을 로그로 남겨 확인
+        if (index === 0) {
+          console.log(`[Chart] 임시 데이터 키:`, Object.keys(data));
+          console.log(`[Chart] '${coinKey}' 키로 찾은 값:`, data[coinKey]);
+        }
+        
         const price = data[coinKey] as number;
         if (typeof price === 'number' && !isNaN(price)) {
           allPrices.push(price);
         }
       });
     });
+
+    if (allPrices.length === 0) {
+      console.log('유효한 가격 데이터가 없어 차트를 그릴 수 없습니다.', {
+        portfolioData: portfolioData.map(c => c.coin),
+        priceDataKeys: priceData.length > 0 ? Object.keys(priceData[0]) : []
+      });
+      return <div>가격 데이터가 유효하지 않아 차트를 표시할 수 없습니다.</div>;
+    }
 
     const minPrice = Math.min(...allPrices);
     const maxPrice = Math.max(...allPrices);
@@ -751,35 +783,32 @@ const PortfolioDetail: React.FC = () => {
                       }}
                     >
                       <td style={{ padding: '12px', borderBottom: '1px solid #dee2e6' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div
-                            style={{
-                              width: '12px',
-                              height: '12px',
-                              borderRadius: '50%',
-                              backgroundColor: coin.color,
-                            }}
-                          />
-                          {coin.coin}
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <span style={{ width: '10px', height: '10px', backgroundColor: coin.color, borderRadius: '50%', marginRight: '10px' }}></span>
+                          <span>{coin.coin.toUpperCase()}</span>
                         </div>
                       </td>
+                      <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>{coin.amount ?? 0}</td>
                       <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>
-                        {coin.amount.toLocaleString()}
+                        {(coin.percentage ?? 100) === 100 
+                          ? '100%' 
+                          : `${(coin.percentage ?? 0).toFixed(2)}%`}
                       </td>
                       <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>
-                        {coin.percentage.toFixed(2)}%
+                        {coin.profit === null ? (
+                          <span style={{ color: '#888' }}>계산 실패</span>
+                        ) : (
+                          <span style={{ color: (coin.profit ?? 0) >= 0 ? '#28a745' : '#dc3545' }}>
+                            {(coin.profit ?? 0) >= 0 ? '+' : ''}{(coin.profit ?? 0).toFixed(2)}%
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>
-                        <span style={{ color: coin.profit >= 0 ? '#28a745' : '#dc3545' }}>
-                          {coin.profit >= 0 ? '+' : ''}{coin.profit.toFixed(2)}%
-                        </span>
+                        {formatPrice(coin.price ?? 0)}
                       </td>
                       <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>
-                        {formatPrice(coin.price)}
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>
-                        <span style={{ color: coin.change24h >= 0 ? '#28a745' : '#dc3545' }}>
-                          {coin.change24h >= 0 ? '+' : ''}{coin.change24h.toFixed(2)}%
+                        <span style={{ color: (coin.change24h ?? 0) >= 0 ? '#28a745' : '#dc3545' }}>
+                          {(coin.change24h ?? 0) >= 0 ? '+' : ''}{(coin.change24h ?? 0).toFixed(2)}%
                         </span>
                       </td>
                     </tr>
