@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import PortfolioModal from "./PortfolioModal";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 interface Portfolio {
@@ -21,6 +21,7 @@ const Side: React.FC = () => {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const { refreshAccessToken, isLoggedIn, isLoading } = useAuth();
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -112,10 +113,14 @@ const Side: React.FC = () => {
       );
    
       alert("포트폴리오가 삭제되었습니다.");
-      
-      // 삭제 후 목록 새로고침
-      fetchPortfolios();
-      
+      // 현재 보고 있는 포트폴리오라면 리다이렉트
+      const match = location.pathname.match(/\/portfolio\/(\d+)/);
+      if (match && Number(match[1]) === portfolioId) {
+        navigate("/portfolio");
+      } else {
+        // 삭제 후 목록 새로고침
+        fetchPortfolios();
+      }
     } catch (error: any) {
    
       if (error.response?.status === 401) {
@@ -144,6 +149,11 @@ const Side: React.FC = () => {
       
       if (!token) {
         console.error("액세스 토큰이 없습니다.");
+        setPortfolios([
+          { id: "1", portfolioId: 1, name: "내 첫 번째 포트폴리오" },
+          { id: "2", portfolioId: 2, name: "암호화폐 투자 포트폴리오" },
+          { id: "3", portfolioId: 3, name: "안정형 포트폴리오" },
+        ]);
         setLoading(false);
         return;
       }
@@ -157,15 +167,15 @@ const Side: React.FC = () => {
         }
       );
       
-      if (response.data.data) {
+      if (response.data.data && response.data.data.length > 0) {
         setPortfolios(response.data.data);
       } else {
-        // data 필드가 없으면 전체 응답을 배열로 처리
-        if (Array.isArray(response.data)) {
-          setPortfolios(response.data);
-        } else {
-          setPortfolios([]);
-        }
+        // data 필드가 없거나 빈 배열이면 임시 데이터 사용
+        setPortfolios([
+          { id: "1", portfolioId: 1, name: "내 첫 번째 포트폴리오" },
+          { id: "2", portfolioId: 2, name: "암호화폐 투자 포트폴리오" },
+          { id: "3", portfolioId: 3, name: "안정형 포트폴리오" },
+        ]);
       }
     } catch (error: any) {
      

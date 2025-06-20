@@ -35,9 +35,7 @@ const Header: React.FC = () => {
   return (
     <header className="header">
       <div className="logo-container">
-        <div className="logo" onClick={() => navigate("/")}>
           PortCoin
-        </div>
       </div>
 
       <div className="nav-container">

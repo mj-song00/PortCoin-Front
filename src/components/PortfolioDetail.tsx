@@ -15,6 +15,7 @@ interface ServerCoin {
   name: string;
   amount: number;
   purchasePrice: number;
+  profit?: number; // 서버에서 내려줄 수익률(%) 또는 수익금
 }
 
 interface ServerPortfolioData {
@@ -72,19 +73,36 @@ const PortfolioDetail: React.FC = () => {
       setLoading(true);
     }
 
+    //수익률 계산 api 호출
+    const calculateProfit = async (portfolioId: string) => {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return null;
+      try {
+        const response = await axios.get<ApiResponse<ServerPortfolioData>>(
+          `http://localhost:8080/api/v1/portfolio-coins/value?portfolioId=${portfolioId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        return response.data.data;
+      } catch (error) {
+        console.error("수익률 계산 API 호출 실패", error);
+        return null;
+      }
+    };
+
     const fetchPortfolioData = async (): Promise<PortfolioData[] | null> => {
-    
       if (!portfolioId) {
         return null;
       }
-
       try {
         const token = localStorage.getItem("accessToken");
-        
         if (!token) {
           return null;
         }
-
         const response = await axios.get<ApiResponse<ServerPortfolioData>>(
           `http://localhost:8080/api/v1/portfolio/${portfolioId}`,
           {
@@ -94,36 +112,37 @@ const PortfolioDetail: React.FC = () => {
             },
           }
         );
-        
         if (response.data.data) {
           const serverData = response.data.data;
           setPortfolioName(serverData.name);
-          
-          // 서버 데이터를 프론트엔드 형식으로 변환
           const totalValue = serverData.coins.reduce((sum, coin) => {
             return sum + (coin.amount * coin.purchasePrice);
           }, 0);
-          
           const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'];
-          
-          const convertedData: PortfolioData[] = serverData.coins.map((coin, index) => {
+          // 1차 변환 (profit은 0)
+          let convertedData: PortfolioData[] = serverData.coins.map((coin, index) => {
             const currentValue = coin.amount * coin.purchasePrice;
             const percentage = totalValue > 0 ? (currentValue / totalValue) * 100 : 0;
-            const profit = 0; // 실제 수익률 계산은 별도 API 필요
-            
             return {
               coin: coin.symbol,
               amount: coin.amount,
-              percentage: Math.round(percentage * 100) / 100, // 소수점 2자리까지
-              profit: profit,
+              percentage: Math.round(percentage * 100) / 100,
+              profit: 0, // 실제 수익률은 아래에서 대입
               color: colors[index % colors.length],
               price: coin.purchasePrice,
-              change24h: 0 // 24시간 변동률은 별도 API 필요
+              change24h: 0
             };
           });
-          
+          // 2차: 수익률 API로 profit 값 채우기
+          const profitData = await calculateProfit(portfolioId);
+          if (profitData && Array.isArray(profitData.coins)) {
+            convertedData = convertedData.map((item) => {
+              const found = profitData.coins.find((c: any) => c.symbol === item.coin);
+              return found ? { ...item, profit: found.profit ?? 0 } : item;
+            });
+          }
           setPortfolioData(convertedData);
-          return convertedData; // 변환된 데이터 반환
+          return convertedData;
         }
         return null;
       } catch (error: any) {

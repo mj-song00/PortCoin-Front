@@ -1,8 +1,16 @@
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import Side from "../components/Side";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Portfolio = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    // 진입 시 바로 첫 번째 포트폴리오로 이동 (임시 데이터와 id 맞춤)
+    navigate("/portfolio/1", { replace: true });
+  }, [navigate]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header />

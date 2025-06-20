@@ -22,16 +22,16 @@ const App: React.FC = () => {
           path="/portfolio"
           element={
             <PrivateRoute isLoggedIn={isLoggedIn} isLoading={isLoading}>
-              <Portfolio />
-            </PrivateRoute>
+            <Portfolio />
+              </PrivateRoute>
           }
         />
         <Route
           path="/portfolio/:portfolioId"
           element={
             <PrivateRoute isLoggedIn={isLoggedIn} isLoading={isLoading}>
-              <PortfolioDetail />
-            </PrivateRoute>
+            <PortfolioDetail />
+              </PrivateRoute>
           }
         />
         <Route path="/" element={<Main />} />
