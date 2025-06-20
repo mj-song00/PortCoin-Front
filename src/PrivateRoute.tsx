@@ -12,11 +12,10 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
   isLoggedIn,
   isLoading,
 }) => {
-  console.log("🔒 PrivateRoute - isLoggedIn:", isLoggedIn, "isLoading:", isLoading);
   
   // 로딩 중일 때는 로딩 화면 표시
   if (isLoading) {
-    console.log("⏳ PrivateRoute - 로딩 중, 로딩 화면 표시");
+  
     return (
       <div style={{ 
         display: 'flex', 
@@ -32,10 +31,8 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
   }
   
   if (isLoggedIn) {
-    console.log("✅ PrivateRoute - 인증됨, 컴포넌트 렌더링");
     return children;
   } else {
-    console.log("❌ PrivateRoute - 인증 안됨, 로그인 페이지로 리다이렉트");
     return <Navigate to="/" replace />;
   }
 };
