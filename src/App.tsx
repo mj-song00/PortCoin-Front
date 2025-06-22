@@ -11,8 +11,6 @@ import { useAuth, AuthProvider } from "./hooks/useAuth";
 const App: React.FC = () => {
   const { isLoggedIn, isLoading } = useAuth();
 
-  console.log("📱 App 컴포넌트 - 현재 isLoggedIn:", isLoggedIn);
-
   return (
     <div className="App">
       <Routes>
