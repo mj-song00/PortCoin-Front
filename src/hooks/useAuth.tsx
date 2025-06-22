@@ -24,24 +24,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // isLoggedIn 상태 변경 로그
   useEffect(() => {
-    console.log("🔐 AuthProvider - isLoggedIn 상태 변경:", isLoggedIn);
   }, [isLoggedIn]);
 
   const refreshAccessToken = async () => {
     // 이미 갱신 중이면 기존 요청을 기다림
     if (isRefreshing) {
-      console.log("⏳ 이미 토큰 갱신 중, 기존 요청 대기...");
       return;
     }
 
-    console.log("🔄 refreshAccessToken 호출됨");
     setIsRefreshing(true);
     
-    // 현재 쿠키 상태 확인 (개발용)
-    console.log("🍪 현재 쿠키:", document.cookie);
-    
     try {
-      console.log("🍪 쿠키 전송 확인 - withCredentials: true");
       const res = await axios.post(
         "http://localhost:8080/api/v1/users/auth/refresh-token",
         {},
@@ -52,9 +45,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       );
-      
-      console.log("📦 서버 응답:", res.data);
-      console.log("📦 응답 타입:", typeof res.data);
       
       // 응답 데이터가 문자열인지 확인
       let token = typeof res.data === 'string' ? res.data : res.data.accessToken || res.data.token;
@@ -80,7 +70,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const checkTokenAndRefresh = async () => {
-    console.log("🔍 checkTokenAndRefresh 시작");
     setIsLoading(true);
     const token = localStorage.getItem("accessToken");
     
@@ -89,7 +78,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         await refreshAccessToken();
       } catch (error) {
-        console.log("❌ refreshToken으로도 토큰 발급 실패");
         setIsLoggedIn(false);
       }
       setIsLoading(false);
@@ -108,12 +96,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // 토큰이 유효하면 refreshToken 호출하지 않음
       }
     } catch (e) {
-      console.log("❌ 토큰 디코딩 실패 - refreshToken으로 새 토큰 발급 시도");
       // 토큰 디코딩 실패 시에도 refreshToken으로 새 토큰 발급 시도
       try {
         await refreshAccessToken();
       } catch (error) {
-        console.log("❌ refreshToken으로도 토큰 발급 실패");
         setIsLoggedIn(false);
       }
     }
@@ -130,15 +116,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const now = Date.now() / 1000;
           const timeUntilExpiry = decoded.exp - now;
           
-          console.log("⏰ 토큰 만료까지 남은 시간:", Math.floor(timeUntilExpiry / 60), "분");
-          
           // 만료 5분 전에 갱신 (300초 = 5분)
           if (timeUntilExpiry < 300 && timeUntilExpiry > 0) {
-            console.log("🔄 토큰 만료 5분 전 - 자동 갱신 시작");
             refreshAccessToken();
           }
         } catch (e) {
-          console.log("❌ 토큰 디코딩 실패 (자동 갱신 체크)");
+          // 토큰 디코딩 실패 시 무시
         }
       }
     };
