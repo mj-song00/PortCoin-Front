@@ -10,6 +10,7 @@ interface PortfolioCoinItem {
   coinId: number | null;
   amount: string;
   purchasePrice: string;
+  purchaseDate: string;
 }
 
 interface CoinTableProps {
@@ -36,6 +37,7 @@ const CoinTable: React.FC<CoinTableProps> = ({
             <th>코인명</th>
             <th>수량</th>
             <th>매수가</th>
+            <th>매수일</th>
             <th>관리</th>
           </tr>
         </thead>
@@ -78,6 +80,19 @@ const CoinTable: React.FC<CoinTableProps> = ({
                     onCoinChange(
                       coin.uniqueId,
                       "purchasePrice",
+                      e.target.value
+                    )
+                  }
+                />
+              </td>
+              <td>
+                <input
+                  type="date"
+                  value={coin.purchaseDate}
+                  onChange={(e) =>
+                    onCoinChange(
+                      coin.uniqueId,
+                      "purchaseDate",
                       e.target.value
                     )
                   }

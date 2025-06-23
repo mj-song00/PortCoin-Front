@@ -14,6 +14,7 @@ interface PortfolioCoinItem {
   coinId: number | null; // 서버 코인 id (선택 안 하면 빈 문자열)
   amount: string;
   purchasePrice: string;
+  purchaseDate: string;
 }
 
 interface ApiResponse<T> {
@@ -84,6 +85,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({ onClose }) => {
       coinId: null,
       amount: "",
       purchasePrice: "",
+      purchaseDate: new Date().toISOString().split('T')[0],
     };
     setPortfolio((prev) => ({
       ...prev,
@@ -99,7 +101,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({ onClose }) => {
     }));
   };
 
-  // 5. 포트폴리오 저장 (coinId가 비었거나 amount/purchasePrice 비었으면 alert 처리 추가해도 좋음)
+  // 5. 포트폴리오 저장 (coinId가 비었거나 amount/purchasePrice/purchaseDate 비었으면 alert 처리 추가해도 좋음)
   const handleSavePortfolio = async () => {
     if (!portfolio.title.trim()) {
       alert("제목을 입력해주세요.");
@@ -117,8 +119,8 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({ onClose }) => {
         alert("코인을 모두 선택해주세요.");
         return;
       }
-      if (!coin.amount.trim() || !coin.purchasePrice.trim()) {
-        alert("수량과 매수가를 모두 입력해주세요.");
+      if (!coin.amount.trim() || !coin.purchasePrice.trim() || !coin.purchaseDate.trim()){
+        alert("수량과 매수가, 구매일을 모두 입력해주세요.");
         return;
       }
     }
@@ -129,10 +131,11 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({ onClose }) => {
       // 서버에 보내는 데이터 형태 맞춤
       const requestBody = {
         title: portfolio.title,
-        coins: portfolio.coins.map(({ coinId, amount, purchasePrice }) => ({
+        coins: portfolio.coins.map(({ coinId, amount, purchasePrice, purchaseDate }) => ({
           coinId,
           amount,
           purchasePrice,
+          purchaseDate,
         })),
       };
 

@@ -6,13 +6,15 @@
     padding: 20px;
     gap: 30px;
     box-sizing: border-box;
+    justify-content: center;
+    align-items: center;
 }
 
 .circular-portfolio {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
     background-color: white;
     border-radius: 15px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -29,6 +31,9 @@
     padding: 20px;
     overflow-y: auto;
     min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 /* 원형 차트 컨테이너 */
@@ -181,11 +186,15 @@
         flex-direction: column;
         height: auto;
         padding: 10px;
+        justify-content: center;
+        align-items: center;
     }
     
     .circular-portfolio,
     .circular-portfolio-detail {
         min-height: 300px;
+        justify-content: center;
+        align-items: center;
     }
     
     .chart-container {
@@ -200,11 +209,12 @@
     }
     
     .line-chart-container {
-        padding: 10px;
+        flex-direction: column;
+        align-items: center;
     }
     
     .line-chart {
-        transform: scale(0.8);
-        transform-origin: center;
+        width: 100%;
+        max-width: 300px;
     }
 }
