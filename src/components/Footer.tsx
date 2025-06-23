@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
         backgroundColor: "#f5f5f5",
       }}
     >
-      여기가 Footer 영역입니다
+      <p>Copyright 2025. PortCoin. All rights reserved.</p>
     </footer>
   );
 };
