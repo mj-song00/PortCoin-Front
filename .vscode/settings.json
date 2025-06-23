@@ -1,0 +1,12 @@
+{
+  "workbench.colorTheme": "One Dark Pro",
+  "editor.fontSize": 14,
+  "editor.fontFamily": "'Fira Code', 'Consolas', 'Courier New', monospace",
+  "editor.fontLigatures": true,
+  "editor.cursorBlinking": "smooth",
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.snippetSuggestions": "top",
+  "editor.tabCompletion": "on",
+  "typescript.suggest.autoImports": true,
+  "javascript.suggest.autoImports": true
+} 
