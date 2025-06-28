@@ -4,6 +4,7 @@ import Input from "../components/Input";
 import { useNavigate } from "react-router-dom";
 import axios, { AxiosError } from "axios";
 import { useAuth } from "../hooks/useAuth";
+import "../css/Login.css";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -45,23 +46,32 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div>
-      <h2>로그인</h2>
-      <Input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="이메일을 입력해주세요"
-      />
+    <div className="login-container">
+      <div className="login-form">
+        <h2 className="login-title">로그인</h2>
+        
+        <div className="login-input-group">
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="이메일을 입력해주세요"
+            className="login-input"
+          />
+        </div>
 
-      <Input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="비밀번호는 대,소문자 특수문자를 포함한 8자 이상입니다."
-      />
+        <div className="login-input-group">
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="비밀번호는 대,소문자 특수문자를 포함한 8자 이상입니다."
+            className="login-input"
+          />
+        </div>
 
-      <Button text="로그인" onClick={handleLogin} />
+        <Button text="로그인" onClick={handleLogin} className="login-button" />
+      </div>
     </div>
   );
 };
