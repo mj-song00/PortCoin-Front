@@ -30,6 +30,7 @@ interface ServerPortfolioData {
 
 // 프론트엔드에서 사용할 데이터 구조
 interface PortfolioData {
+  portfolioCoinId: number;
   coinId: number;
   coin: string;
   amount: number;
@@ -49,9 +50,10 @@ interface ApiResponse<T> {
 }
 
 interface CaculateData {
+  portfolioId: number; // 포트폴리오 ID
   fullName: string;
   image: string;
-  profitLoss:number;
+  profitLoss: number;
 }
 
 // 포트폴리오 수정을 위한 새로운 Request DTO
@@ -109,14 +111,10 @@ const PortfolioDetail: React.FC = () => {
     setLoading(true);
     
     try {
-   
-      
       // 코인별 수익률 계산 데이터 가져오기
-      
       const profitData = await fetchCaculateData();
      
       // 포트폴리오 데이터를 먼저 가져오기
-   
       const portfolioData = await fetchPortfolioData();
       
       // 포트폴리오 데이터가 있으면 24시간 변동률 가져오기
@@ -126,29 +124,26 @@ const PortfolioDetail: React.FC = () => {
         // 24시간 변동률을 포함하여 포트폴리오 데이터 다시 가져오기
         await fetchPortfolioData(change24hMap);
       } else {
-        console.log("포트폴리오 데이터가 없어서 24시간 변동률을 가져오지 않습니다.");
+        // 포트폴리오 데이터가 없어서 24시간 변동률을 가져오지 않습니다.
       }
-      
-      console.log("=== 데이터 로드 완료 ===");
     } catch (error) {
-      console.error("데이터 로드 중 오류 발생:", error);
+      // 데이터 로드 중 오류 발생:
     } finally {
       setLoading(false);
     }
   };
 
+
   // 서버에서 계산된 수익률 불러오기 
   const fetchCaculateData = async (): Promise<CaculateData[] | null> => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      console.error("액세스 토큰이 없습니다.");
       return null;
     }
     
     try {
-      console.log("수익률 계산 API 호출 시작");
       const response = await axios.get<CaculateData[]>(
-        `http://localhost:8080/api/v1/portfolio-coins/value`,
+        `http://localhost:8080/api/v1/portfolio-coins/${portfolioId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -157,34 +152,21 @@ const PortfolioDetail: React.FC = () => {
         }
       );
       
-      console.log("수익률 계산 API 응답:", response.data);
-      
       if (response.data) {
         // 서버 응답이 배열인지 단일 객체인지 확인
         const dataArray = Array.isArray(response.data) ? response.data : [response.data];
-        console.log("수익률 계산 데이터 배열:", dataArray);
         setCoinProfitData(dataArray);
         return dataArray;
       }
       
-      console.log("수익률 계산 데이터가 없습니다.");
       return null;
     } catch (error: any) {
-      console.error("수익률 계산 데이터 로드 실패:", error);
-      console.error("수익률 계산 에러 상세:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-      
       if (error.response?.status === 401) {
         try {
           await refreshAccessToken();
           // 토큰 갱신 후 다시 시도
           return await fetchCaculateData();
         } catch (refreshError) {
-          console.error("토큰 갱신 실패");
           window.location.href = '/login';
           return null;
         }
@@ -238,9 +220,8 @@ const PortfolioDetail: React.FC = () => {
           const serverChange24h = coin.change_24h;
           const finalChange24h = apiChange24h ?? serverChange24h ?? 0;
           
-          console.log(`코인 ${coin.symbol}: API 24h=${apiChange24h}, 서버 24h=${serverChange24h}, 최종=${finalChange24h}`);
-          
           return {
+            portfolioCoinId: coin.portfolioCoinId,
             coinId: coin.id,
             coin: coin.symbol,
             amount: coin.amount,
@@ -272,12 +253,11 @@ const PortfolioDetail: React.FC = () => {
       }
       
       // 에러 시 임시 데이터 사용
-      console.log('에러로 인해 임시 데이터 사용 - 에러 타입:', error.name);
       const fallbackData = [
-        { coinId: 0, coin: 'BTC', amount: 0.5, percentage: 40, profit: 15.2, color: '#ff6b6b', price: 43250, change24h: 2.3, purchasePrice: 43250, purchaseDate: '2024-01-01' },
-        { coinId: 0, coin: 'ETH', amount: 2.0, percentage: 30, profit: 8.7, color: '#4ecdc4', price: 2650, change24h: -1.2, purchasePrice: 2650, purchaseDate: '2024-02-01' },
-        { coinId: 0, coin: 'ADA', amount: 1000, percentage: 20, profit: -5.3, color: '#45b7d1', price: 0.48, change24h: 5.8, purchasePrice: 0.48, purchaseDate: '2024-03-01' },
-        { coinId: 0, coin: 'DOT', amount: 50, percentage: 10, profit: 12.1, color: '#96ceb4', price: 7.25, change24h: -0.8, purchasePrice: 7.25, purchaseDate: '2024-04-01' },
+        { portfolioCoinId: 0, coinId: 0, coin: 'BTC', amount: 0.5, percentage: 40, profit: 15.2, color: '#ff6b6b', price: 43250, change24h: 2.3, purchasePrice: 43250, purchaseDate: '2024-01-01' },
+        { portfolioCoinId: 0, coinId: 0, coin: 'ETH', amount: 2.0, percentage: 30, profit: 8.7, color: '#4ecdc4', price: 2650, change24h: -1.2, purchasePrice: 2650, purchaseDate: '2024-02-01' },
+        { portfolioCoinId: 0, coinId: 0, coin: 'ADA', amount: 1000, percentage: 20, profit: -5.3, color: '#45b7d1', price: 0.48, change24h: 5.8, purchasePrice: 0.48, purchaseDate: '2024-03-01' },
+        { portfolioCoinId: 0, coinId: 0, coin: 'DOT', amount: 50, percentage: 10, profit: 12.1, color: '#96ceb4', price: 7.25, change24h: -0.8, purchasePrice: 7.25, purchaseDate: '2024-04-01' },
       ];
       
       setPortfolioName("샘플 포트폴리오");
@@ -291,7 +271,6 @@ const PortfolioDetail: React.FC = () => {
     try {
       const token = localStorage.getItem("accessToken");
       if (!token) {
-        console.error("액세스 토큰이 없습니다.");
         return [];
       }
 
@@ -311,8 +290,6 @@ const PortfolioDetail: React.FC = () => {
       }
       return [];
     } catch (error: any) {
-      console.error("코인 목록 로드 실패:", error);
-      
       if (error.response?.status === 401) {
         try {
           await refreshAccessToken();
@@ -332,107 +309,47 @@ const PortfolioDetail: React.FC = () => {
     try {
       const token = localStorage.getItem("accessToken");
       if (!token) {
-        console.error("액세스 토큰이 없습니다.");
         return {};
       }
 
+      if (!portfolioId) {
+        return {};
+      }
 
-      // 전달받은 포트폴리오 코인들에 대해서만 chart/history API 호출
-      const coinSymbols = portfolioCoins.map(coin => coin.coin.toLowerCase());
-  
-      // 각 코인에 대한 API 요청을 Promise 배열로 생성
-      const priceRequests = coinSymbols.map(coin => {
-        const symbol = coin;
-        
-        // doge 코인의 경우 다른 심볼로 시도
-        let requestSymbol = symbol;
-        if (symbol === 'doge') {
-          requestSymbol = 'dogecoin';
-        }
-        
-        return axios.post(
-          'http://localhost:8080/api/v1/chart/history',
-          { 
-            symbol: requestSymbol,
-            days: 1  // 1일 데이터 요청
+      const symbols = portfolioCoins.map(coin => coin.coin.toLowerCase());
+      const response = await axios.post(
+        `http://localhost:8080/api/v1/chart/history`,
+        {
+          symbols,
+          days: 1
+        },
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
-          {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-          }
-        ).then(response => {
-          console.log(`chart/history API 응답 성공 - ${symbol}:`, response.data);
-          return {
-            symbol,
-            data: response.data.data || response.data
-          };
-        }).catch(error => {
-          console.error(`chart/history API 요청 실패 - ${symbol}:`, error.response?.data || error.message);
-          
-          // doge 코인이 실패한 경우 원래 심볼로 다시 시도
-          if (symbol === 'doge' && requestSymbol === 'dogecoin') {
-            console.log(`doge 코인을 원래 심볼로 다시 시도`);
-            return axios.post(
-              'http://localhost:8080/api/v1/chart/history',
-              { 
-                symbol: 'doge',
-                days: 1
-              },
-              {
-                headers: { 
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                },
-              }
-            ).then(response => {
-              console.log(`chart/history API 재시도 성공 - ${symbol}:`, response.data);
-              return {
-                symbol,
-                data: response.data.data || response.data
-              };
-            }).catch(retryError => {
-              console.error(`chart/history API 재시도 실패 - ${symbol}:`, retryError.response?.data || retryError.message);
-              return { symbol, data: null };
-            });
-          }
-          
-          return { symbol, data: null };
-        });
-      });
-
-      // Promise.all로 모든 요청을 동시에 실행
-      const responses = await Promise.all(priceRequests);
-
-      // 각 코인별로 24시간 변동률 값을 추출
-      const change24hMap: { [symbol: string]: number } = {};
-      responses.forEach(response => {
-        const { symbol, data } = response;
-        if (data && data.prices && Array.isArray(data.prices) && data.prices.length > 0) {
-          // prices 배열에서 첫 번째 항목의 priceChangePercentage24h 값 추출
-          const priceData = data.prices[0];
-          const change24h = priceData.priceChangePercentage24h;
-          
-        
-          if (change24h !== undefined && change24h !== null) {
-            change24hMap[symbol] = change24h;
-          }
-        } else {
-          console.log(`코인 ${symbol}: prices 데이터가 없거나 비어있음`);
         }
-      });
+      );
+
+      const change24hMap: { [symbol: string]: number } = {};
+      const data = response.data.data;
+
+      if (data && typeof data === 'object') {
+        Object.keys(data).forEach(symbol => {
+          const priceArr = data[symbol]?.prices;
+          if (Array.isArray(priceArr) && priceArr.length > 0) {
+            const change24h = priceArr[0].priceChangePercentage24h;
+            if (change24h !== undefined && change24h !== null) {
+              change24hMap[symbol] = change24h;
+            }
+          }
+        });
+      } else {
+        // 24시간 변동률 데이터가 올바른 구조가 아닙니다:
+      }
 
       return change24hMap;
     } catch (error: any) {
-   
-      console.error("에러 상세 정보:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-      
       if (error.response?.status === 401) {
         try {
           await refreshAccessToken();
@@ -540,7 +457,6 @@ const PortfolioDetail: React.FC = () => {
     try {
       const token = localStorage.getItem("accessToken");
       if (!token) {
-        console.error("액세스 토큰이 없습니다.");
         return false;
       }
   
@@ -562,7 +478,6 @@ const PortfolioDetail: React.FC = () => {
       }
       return false;
     } catch (error: any) {
-      console.error("포트폴리오 수정 실패:", error);
       alert(error.response?.data?.message || "포트폴리오 수정에 실패했습니다.");
       return false;
     }
@@ -679,23 +594,18 @@ const PortfolioDetail: React.FC = () => {
                         const portfolioCoinLower = coin.coin.toLowerCase();
                         const serverCoinLower = profitCoin.fullName.toLowerCase();
                         
-                        console.log(`매칭 시도: portfolioCoin=${portfolioCoinLower}, serverCoin=${serverCoinLower}`);
-                        
                         // 정확한 매칭 시도
                         if (portfolioCoinLower === serverCoinLower) {
-                          console.log(`정확한 매칭 성공: ${portfolioCoinLower}`);
                           return true;
                         }
                         
                         // 부분 매칭 시도
                         if (serverCoinLower.includes(portfolioCoinLower) || portfolioCoinLower.includes(serverCoinLower)) {
-                          console.log(`부분 매칭 성공: ${portfolioCoinLower} <-> ${serverCoinLower}`);
                           return true;
                         }
                         
                         // USDe 같은 특수한 경우 처리
                         if (portfolioCoinLower === 'usde' && serverCoinLower.includes('usde')) {
-                          console.log(`USDe 특수 매칭 성공: ${portfolioCoinLower}`);
                           return true;
                         }
                         
@@ -725,15 +635,11 @@ const PortfolioDetail: React.FC = () => {
                         
                         const possibleNames = symbolMappings[portfolioCoinLower];
                         if (possibleNames && possibleNames.some(name => serverCoinLower.includes(name))) {
-                          console.log(`심볼 매칭 성공: ${portfolioCoinLower} -> ${serverCoinLower}`);
                           return true;
                         }
                         
-                        console.log(`매칭 실패: ${portfolioCoinLower} <-> ${serverCoinLower}`);
                         return false;
                       });
-                      
-                      console.log(`최종 결과: ${coin.coin} -> ${serverProfitData ? serverProfitData.profitLoss : '매칭 실패'}`);
                       
                       return (
                         <tr
@@ -768,9 +674,13 @@ const PortfolioDetail: React.FC = () => {
                           </td>
                           <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #dee2e6' }}>
                             {serverProfitData ? (
-                              <span style={{ color: serverProfitData.profitLoss >= 0 ? '#28a745' : '#dc3545' }}>
-                                {serverProfitData.profitLoss >= 0 ? '+' : ''}{serverProfitData.profitLoss.toFixed(2)}%
-                              </span>
+                              (() => {
+                                return (
+                                  <span style={{ color: serverProfitData.profitLoss >= 0 ? '#28a745' : '#dc3545' }}>
+                                    {serverProfitData.profitLoss >= 0 ? '+' : ''}{serverProfitData.profitLoss.toFixed(2)}%
+                                  </span>
+                                );
+                              })()
                             ) : (
                               <span style={{ color: '#888' }}>계산 중...</span>
                             )}
