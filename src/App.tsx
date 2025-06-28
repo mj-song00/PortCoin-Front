@@ -7,7 +7,6 @@ import PortfolioDetail from "./components/PortfolioDetail";
 import Main from "./pages/Main";
 import PrivateRoute from "./PrivateRoute";
 import { useAuth, AuthProvider } from "./hooks/useAuth";
-import MyPage from "./pages/MyPage";
 
 const App: React.FC = () => {
   const { isLoggedIn, isLoading } = useAuth();
@@ -34,7 +33,6 @@ const App: React.FC = () => {
           }
         />
         <Route path="/" element={<Main />} />
-        <Route path="/mypage" element={<MyPage />} />
       </Routes>
     </div>
   );

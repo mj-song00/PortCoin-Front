@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate} from "react-router-dom";
 import "../css/Main.css";
 import axios from "axios";
 import "../css/Header.css";
