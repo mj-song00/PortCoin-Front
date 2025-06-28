@@ -19,7 +19,7 @@ const Ranking: React.FC<Props> = ({ data }) => {
           </tr>
         </thead>
         <tbody>
-          {data.map((coin, index) => (
+          {data.slice(0, 10).map((coin, index) => (
             <tr key={index} className="coin-container">
               <td>
                 <img src={coin.image} alt={coin.name} />

@@ -17,3 +17,37 @@
   color: black;
   cursor: pointer;
 }
+
+/* Ranking 컴포넌트 스타일 */
+.ranking-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0 auto;
+  transform: scale(1.0); /* 80% 축소 */
+}
+
+.ranking-container .title {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.ranking-container .coin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.ranking-container .coin-table th,
+.ranking-container .coin-table td {
+  padding: 8px;
+  text-align: center;
+}
+
+.ranking-container .coin-table img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
