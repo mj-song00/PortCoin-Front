@@ -107,31 +107,33 @@ const PortfolioDetail: React.FC = () => {
   const [serverPortfolioData, setServerPortfolioData] = useState<ServerPortfolioData | null>(null);
 
   // 데이터 로드 함수
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     
     try {
-      // 코인별 수익률 계산 데이터 가져오기
-      const profitData = await fetchCaculateData();
-     
       // 포트폴리오 데이터를 먼저 가져오기
       const portfolioData = await fetchPortfolioData();
       
-      // 포트폴리오 데이터가 있으면 24시간 변동률 가져오기
+      // 포트폴리오 데이터가 있으면 24시간 변동률과 수익률 계산 데이터 가져오기
       if (portfolioData && portfolioData.length > 0) {
-        const change24hMap = await fetch24hChangeData(portfolioData);
-  
+        // 병렬로 데이터 가져오기
+        const [change24hMap, profitData] = await Promise.all([
+          fetch24hChangeData(portfolioData),
+          fetchCaculateData()
+        ]);
+        
         // 24시간 변동률을 포함하여 포트폴리오 데이터 다시 가져오기
         await fetchPortfolioData(change24hMap);
       } else {
-        // 포트폴리오 데이터가 없어서 24시간 변동률을 가져오지 않습니다.
+        // 포트폴리오 데이터가 없어도 수익률 계산 데이터는 가져오기
+        await fetchCaculateData();
       }
     } catch (error) {
-      // 데이터 로드 중 오류 발생:
+      console.error('데이터 로드 중 오류 발생:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [portfolioId, refreshAccessToken]);
 
 
   // 서버에서 계산된 수익률 불러오기 
@@ -198,6 +200,7 @@ const PortfolioDetail: React.FC = () => {
       
       if (response.data.data) {
         const serverData = response.data.data;
+        
         setPortfolioName(serverData.name);
         setServerPortfolioData(serverData);
 
@@ -234,6 +237,7 @@ const PortfolioDetail: React.FC = () => {
             purchaseDate: coin.purchaseDate // 서버에서 제공하는 매수일 사용
           };
         });
+        
         setPortfolioData(convertedData);
         return convertedData;
       }
@@ -378,7 +382,7 @@ const PortfolioDetail: React.FC = () => {
       // 단, isLoading이 true일 때는 리다이렉트하지 않음 (토큰 확인 중)
       window.location.href = '/login';
     }
-  }, [isLoggedIn, isLoading, portfolioId, refreshAccessToken]);
+  }, [isLoggedIn, isLoading, portfolioId, loadData]);
 
   // 로딩 중일 때 표시할 내용
   if (loading) {
@@ -473,7 +477,15 @@ const PortfolioDetail: React.FC = () => {
   
       if (response.data.statusCode === 200) {
         alert(response.data.message || "포트폴리오가 성공적으로 수정되었습니다.");
-        loadData(); // 데이터 새로고침
+        
+        // 데이터 새로고침을 위해 상태 초기화 후 다시 로드
+        setPortfolioData([]);
+        setCoinProfitData([]);
+        setServerPortfolioData(null);
+        
+        // 즉시 데이터 다시 로드
+        await loadData();
+        
         return true;
       }
       return false;
@@ -485,21 +497,37 @@ const PortfolioDetail: React.FC = () => {
 
   // 편집 모달 열기
   const openEditModal = async () => {
-    await fetchAvailableCoins();
-    if (serverPortfolioData) {
-      const initialCoins: CoinInfo[] = serverPortfolioData.coins.map(coin => ({
-        portfolioCoinId: coin.portfolioCoinId,
-        coinId: coin.id,
-        symbol: coin.symbol,
-        name: coin.name,
-        amount: coin.amount,
-        purchasePrice: coin.purchasePrice,
-        purchaseDate: coin.purchaseDate ? coin.purchaseDate.split('T')[0] : new Date().toISOString().split('T')[0]
-      }));
-      setEditingCoins(initialCoins);
-      setInitialEditingCoins(initialCoins);
+    try {
+      await fetchAvailableCoins();
+      
+      // 최신 서버 데이터를 가져와서 편집 모달에 반영
+      if (!serverPortfolioData) {
+        await fetchPortfolioData();
+      }
+      
+      if (serverPortfolioData) {
+        const initialCoins: CoinInfo[] = serverPortfolioData.coins.map(coin => ({
+          portfolioCoinId: coin.portfolioCoinId,
+          coinId: coin.id,
+          symbol: coin.symbol,
+          name: coin.name,
+          amount: coin.amount,
+          purchasePrice: coin.purchasePrice,
+          purchaseDate: coin.purchaseDate ? coin.purchaseDate.split('T')[0] : new Date().toISOString().split('T')[0]
+        }));
+        setEditingCoins(initialCoins);
+        setInitialEditingCoins(initialCoins);
+      } else {
+        // 서버 데이터가 없는 경우 빈 배열로 설정
+        setEditingCoins([]);
+        setInitialEditingCoins([]);
+      }
+      
+      setShowEditModal(true);
+    } catch (error) {
+      console.error('편집 모달 열기 중 오류:', error);
+      alert('편집 모달을 열 수 없습니다.');
     }
-    setShowEditModal(true);
   };
 
   // 편집 모달 닫기

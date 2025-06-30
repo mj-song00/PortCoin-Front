@@ -35,7 +35,9 @@ const Header: React.FC = () => {
   return (
     <header className="header">
       <div className="logo-container">
+        <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#333' }}>
           PortCoin
+        </span>
       </div>
 
       <div className="nav-container">
@@ -55,11 +57,16 @@ const Header: React.FC = () => {
         </nav>
       </div>
 
-      <div className="login-container">
-        <button onClick={() => navigate("/mypage")} className="mypage-btn">
+      <div className="mypage-container">
+        <button 
+          onClick={() => navigate("/mypage")} 
+          className="mypage-btn"
+        >
           <img className="account" src="/img/user.png" alt="프로필" />
         </button>
-        
+      </div>
+
+      <div className="login-container">
         {!isLoggedIn ? (
           <button type="button" className="login-btn" onClick={navigateToLogin}>
             로그인
